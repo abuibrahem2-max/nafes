@@ -593,7 +593,21 @@
                         </div>
                         <div style="overflow-x:auto;">
                             <table class="simple-table">
-                                <thead><tr><th>م</th><th>اسم الطالب</th><th>رقم الهوية</th><th>وقت التسليم</th><th>المدة</th><th>صحيحة</th><th>خاطئة</th><th>الدرجة</th><th>المستوى</th><th>حذف</th></tr></thead>
+                                <thead>
+                                    <tr>
+                                        <th>م</th>
+                                        <th>اسم الطالب</th>
+                                        <th>رقم الهوية</th>
+                                        <th>الفصل</th>
+                                        <th>وقت التسليم</th>
+                                        <th>المدة</th>
+                                        <th>صحيحة</th>
+                                        <th>خاطئة</th>
+                                        <th>الدرجة</th>
+                                        <th>المستوى</th>
+                                        <th>حذف</th>
+                                    </tr>
+                                </thead>
                                 <tbody id="students-detailed-body"></tbody>
                             </table>
                         </div>
@@ -983,7 +997,7 @@
                     let sc = st.score !== undefined ? st.score : 0; let tot = st.total !== undefined ? st.total : 0; let wrong = tot - sc;
                     let timeVal = st.timeTaken ? st.timeTaken : '-';
                     let subTime = st.submissionTime ? st.submissionTime : '-';
-                    h += `<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'-')}</td><td>${toAr(subTime)}</td><td>${toAr(timeVal)}</td><td style="color:green">${toAr(sc)}</td><td style="color:red">${toAr(wrong)}</td><td><b>${toAr(sc)} / ${toAr(tot)}</b></td><td>${st.level || '-'}</td><td><button onclick="del('${st.key}')" style="color:red;border:none;background:none;cursor:pointer;">❌</button></td></tr>`;
+                    h += `<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'-')}</td><td style="font-weight:bold; color:var(--primary);">${st.section ? 'فصل '+st.section : '-'}</td><td>${toAr(subTime)}</td><td>${toAr(timeVal)}</td><td style="color:green">${toAr(sc)}</td><td style="color:red">${toAr(wrong)}</td><td><b>${toAr(sc)} / ${toAr(tot)}</b></td><td>${st.level || '-'}</td><td><button onclick="del('${st.key}')" style="color:red;border:none;background:none;cursor:pointer;">❌</button></td></tr>`;
                 });
                 document.getElementById('students-detailed-body').innerHTML = h;
             });
@@ -1038,10 +1052,10 @@
         function buildPrintTable(mode) {
             let h = "";
             if(mode === 'grades') {
-                h = `<table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:10px;"><thead><tr style="background:#eee;"><th style="width:5%;">م</th><th style="width:20%;">الاسم</th><th style="width:15%;">الهوية</th><th style="width:10%;">وقت التسليم</th><th style="width:10%;">المدة</th><th style="width:10%;">صحيحة ✅</th><th style="width:10%;">خاطئة ❌</th><th style="width:10%;">الدرجة</th><th style="width:10%;">المستوى</th></tr></thead><tbody>`;
+                h = `<table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:10px;"><thead><tr style="background:#eee;"><th style="width:5%;">م</th><th style="width:20%;">الاسم</th><th style="width:12%;">الهوية</th><th style="width:8%;">الفصل</th><th style="width:10%;">وقت التسليم</th><th style="width:10%;">المدة</th><th style="width:8%;">صحيحة ✅</th><th style="width:8%;">خاطئة ❌</th><th style="width:9%;">الدرجة</th><th style="width:10%;">المستوى</th></tr></thead><tbody>`;
                 printData.content.forEach((st,i)=> { 
                     let score = st.score || 0; let total = st.total || 0; let wrong = total - score; 
-                    h+=`<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'')}</td><td>${toAr(st.submissionTime||'-')}</td><td>${toAr(st.timeTaken||'-')}</td><td>${toAr(score)}</td><td>${toAr(wrong)}</td><td><b>${toAr(score)} / ${toAr(total)}</b></td><td>${st.level||'-'}</td></tr>`; 
+                    h+=`<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'')}</td><td>${st.section || '-'}</td><td>${toAr(st.submissionTime||'-')}</td><td>${toAr(st.timeTaken||'-')}</td><td>${toAr(score)}</td><td>${toAr(wrong)}</td><td><b>${toAr(score)} / ${toAr(total)}</b></td><td>${st.level||'-'}</td></tr>`; 
                 });
             } else {
                 h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#eee;"><th style="width:40%;">المهارة</th><th style="width:20%;">عدد الطلاب المخفقين</th><th style="width:20%;">النسبة</th><th style="width:20%;">التوصية</th></tr></thead><tbody>`;
@@ -1083,6 +1097,7 @@
                     {v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
                     {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
                     {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
+                    {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
                     {v: "وقت التسليم", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
                     {v: "الوقت المستغرق", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
                     {v: "صحيحة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
@@ -1103,6 +1118,7 @@
                         {v: i+1, s: cellStyle},
                         {v: st.name || "بدون اسم", s: cellStyle},
                         {v: st.studentId || "-", s: cellStyle},
+                        {v: st.section || "-", s: cellStyle},
                         {v: st.submissionTime || "-", s: cellStyle},
                         {v: st.timeTaken || "-", s: cellStyle},
                         {v: score, s: {...cellStyle, font: {color: {rgb: "008000"}}, numFmt: "0"}},
@@ -1124,7 +1140,7 @@
                 
                 let finalData = [...headers, tableHead, ...dataRows, ...footerRows];
                 let ws = XLSX.utils.aoa_to_sheet(finalData);
-                ws['!cols'] = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 12}, {wch: 12}, {wch: 8}, {wch: 8}, {wch: 8}, {wch: 10}, {wch: 12}, {wch: 40}];
+                ws['!cols'] = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 8}, {wch: 12}, {wch: 12}, {wch: 8}, {wch: 8}, {wch: 8}, {wch: 10}, {wch: 12}, {wch: 40}];
                 ws['!merges'] = [
                     {s: {r:0, c:0}, e: {r:0, c:8}}, {s: {r:1, c:0}, e: {r:1, c:8}}, {s: {r:2, c:0}, e: {r:2, c:8}}, {s: {r:3, c:0}, e: {r:3, c:8}}, {s: {r:5, c:0}, e: {r:5, c:8}},
                     {s: {r: finalData.length-1, c: 0}, e: {r: finalData.length-1, c: 2}}, 
