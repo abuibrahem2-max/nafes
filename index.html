@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>منصة نافس - الإصدار العلمي الشامل</title>
+    <title>منصة نافس - مدرسة الراشدون</title>
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Tajawal:wght@400;500;700;800&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
@@ -24,9 +24,11 @@
     <style>
         :root { --primary: #006266; --secondary: #1b1464; --bg: #f5f6fa; --text: #2f3542; --white: #ffffff; --font: 'Tajawal', sans-serif; }
         * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
-        body { font-family: var(--font); margin: 0; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
         
-        /* تنسيقات الرياضيات والعلوم */
+        /* إعدادات الصفحة الأساسية */
+        html, body { font-family: var(--font); margin: 0; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; width: 100%; max-width: 100%; }
+        
+        /* تنسيقات الرياضيات العلمية */
         .root-box { display: inline-flex; flex-direction: row; align-items: flex-start; direction: rtl; line-height: 0; vertical-align: middle; margin: 0 4px; }
         .root-content { border-top: 1.8px solid #000; padding: 4px 3px 0 3px; font-size: 1.3rem; font-weight: bold; font-family: 'Times New Roman', serif; line-height: 1; display: inline-block; margin-right: -1px; }
         .root-svg { width: 14px; height: 24px; overflow: visible; fill: none; stroke: black; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
@@ -62,7 +64,7 @@
         .menu-item { padding: 12px; margin-bottom: 8px; border-radius: 10px; cursor: pointer; transition: 0.2s; display: flex; align-items: center; color: rgba(255,255,255,0.9); }
         .menu-item:hover, .menu-item.active { background: rgba(255,255,255,0.2); color: white; font-weight: bold; transform: translateX(-5px); }
         .menu-item i { margin-left: 15px; width: 25px; text-align: center; font-size: 1.2rem; }
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; background: var(--bg); position: relative; }
+        .main-content { flex: 1; padding: 30px; overflow-y: auto; overflow-x: hidden; background: var(--bg); position: relative; width: 100%; }
         .mobile-header { display: none; } 
         .section { display: none; animation: fadeIn 0.4s; }
         .section.active { display: block; }
@@ -97,9 +99,17 @@
         #json-editor-area { display: none; background: #2d3436; padding: 15px; border-radius: 10px; margin-bottom: 20px; direction: ltr; }
         #q-json-raw { width: 100%; height: 200px; background: #1e272e; color: #00d2d3; font-family: monospace; border: none; padding: 10px; border-radius: 5px; font-size: 14px; }
         
-        .tab-buttons { display: flex; gap: 5px; margin-bottom: 20px; background: #f1f2f6; padding: 5px; border-radius: 12px; overflow-x: auto; }
-        .tab-btn { flex: 1; min-width: 100px; padding: 10px; border: none; background: transparent; border-radius: 8px; font-weight: 600; color: #636e72; }
-        .tab-btn.active { background: white; color: var(--primary); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        /* ============== تصميم الأزرار الملونة الجديد ============== */
+        .tab-buttons { display: flex; gap: 10px; margin-bottom: 25px; background: #fff; padding: 10px; border-radius: 16px; overflow-x: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee; }
+        .tab-btn { flex: 1; min-width: 120px; padding: 12px 10px; border: 1px solid #f0f0f0; background: #fdfdfd; border-radius: 12px; font-weight: 700; color: #636e72; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
+        .tab-btn i { font-size: 1.1rem; transition: 0.3s; }
+        .tab-btn:hover { background: #f1f2f6; transform: translateY(-2px); }
+        .tab-btn:nth-child(1).active { background: linear-gradient(135deg, #0984e3, #74b9ff); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(9, 132, 227, 0.3); }
+        .tab-btn:nth-child(2).active { background: linear-gradient(135deg, #d35400, #e67e22); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(211, 84, 0, 0.3); }
+        .tab-btn:nth-child(3).active { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
+        .tab-btn:nth-child(4).active { background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(192, 57, 43, 0.3); }
+        .tab-btn:nth-child(5).active { background: linear-gradient(135deg, #006266, #1289a7); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(0, 98, 102, 0.3); }
+
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         
@@ -132,18 +142,17 @@
         .st-missed { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
         .st-mastered { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
 
-        /* تنسيقات حالة الاختبار على البطاقات */
         .status-indicator { margin-top: 10px; height: 20px; }
 
         @media (max-width: 768px) {
-            body { flex-direction: column; height: 100%; overflow: auto; background: #fff; }
+            body { flex-direction: column; height: 100%; overflow: auto; background: #fff; width: 100%; }
             .sidebar { position: fixed; bottom: 0; left: 0; width: 100%; height: 70px; flex-direction: row; justify-content: space-around; padding: 0; background: #fff; border-top: 1px solid #eee; box-shadow: 0 -5px 20px rgba(0,0,0,0.05); z-index: 999;}
             .logo { display: none; }
             .menu-item { flex-direction: column; padding: 5px; margin: 0; font-size: 0.7rem; background: transparent !important; color: #636e72; flex: 1; justify-content: center; }
             .menu-item.active { color: var(--primary); transform: none; }
             .mobile-header { display: flex; align-items: center; justify-content: center; gap: 10px; padding: 15px; background: var(--primary); color: white; position: sticky; top: 0; z-index: 900; }
             .mobile-header img { width: 40px; filter: brightness(0) invert(1); }
-            .main-content { padding: 15px 15px 90px 15px; }
+            .main-content { padding: 15px 15px 90px 15px; width: 100%; overflow-x: hidden; }
             .card-container { padding: 20px; }
             .timer-float { top: 80px; left: 10px; padding: 5px 15px; font-size: 0.9rem; }
             .charts-grid { grid-template-columns: 1fr; }
@@ -151,15 +160,48 @@
 
         /* الطباعة */
         #printableArea, #formalExamArea { display: none; }
+
+        /* ================================================= */
+        /* إصلاح جذري للطباعة على الجوال والكمبيوتر */
+        /* ================================================= */
         @media print {
-            body { background: white; height: auto; overflow: visible; display: block; font-family: 'Times New Roman', serif; }
-            .sidebar, .mobile-header, .main-content, #loading-overlay, .btn, .no-print, .timer-float, #json-editor-area, .math-toolbar { display: none !important; }
+            html, body { 
+                height: auto !important; 
+                overflow: visible !important; 
+                width: 100% !important; 
+                margin: 0 !important; 
+                padding: 0 !important;
+                background: white !important;
+                font-family: 'Times New Roman', serif; 
+            }
+            .sidebar, .mobile-header, .main-content, #loading-overlay, .btn, .no-print, .timer-float, #json-editor-area, .math-toolbar { 
+                display: none !important; 
+            }
             @page { margin: 10mm; size: A4; }
             
-            body.printing-report #printableArea { display: block !important; position: relative; width: 100%; margin: 0; padding: 0; direction: rtl; }
-            body.printing-report #printableArea * { visibility: visible; }
+            /* تفعيل مناطق الطباعة وتثبيتها */
+            body.printing-report #printableArea { 
+                display: block !important; 
+                position: absolute; 
+                top: 0; left: 0; 
+                width: 100%; 
+                direction: rtl;
+                z-index: 9999;
+                background: white;
+            }
             
-            /* تقليل مسافات الهيدر */
+            body.printing-formal #formalExamArea { 
+                display: block !important; 
+                position: absolute; 
+                top: 0; left: 0; 
+                width: 100%; 
+                direction: rtl;
+                z-index: 9999;
+                background: white;
+            }
+
+            #printableArea *, #formalExamArea * { visibility: visible !important; }
+            
             .print-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 10px; }
             .print-logo { height: 70px; width: auto; object-fit: contain; }
             .print-title h2, .print-title h4 { margin: 2px 0; text-align: center; color: #000; font-size: 14px; }
@@ -168,72 +210,44 @@
             #print-doc-title { margin-top: 0; margin-bottom: 5px; }
             #print-doc-subtitle { margin-top: 0; margin-bottom: 10px; }
             
-            #printableArea table { width: 100%; border-collapse: collapse; margin-top: 5px; font-size: 10pt; }
-            #printableArea th { background-color: #eee !important; color: #000 !important; border: 1px solid #000; -webkit-print-color-adjust: exact; font-weight: bold; padding: 4px; }
-            #printableArea td { border: 1px solid #000; padding: 4px; color: #000; }
+            table { width: 100% !important; border-collapse: collapse; margin-top: 5px; font-size: 10pt; }
+            th { background-color: #eee !important; color: #000 !important; border: 1px solid #000; -webkit-print-color-adjust: exact; font-weight: bold; padding: 4px; }
+            td { border: 1px solid #000; padding: 4px; color: #000; }
             
-            /* ==== تحديث الطباعة: وضع الإحصائيات والرسم جنباً إلى جنب ==== */
             .print-top-row { display: flex !important; justify-content: space-between; gap: 10px; height: 130px; margin-bottom: 5px; page-break-inside: avoid; }
-            
             .stats-summary { display: grid !important; grid-template-columns: 1fr 1fr; width: 45%; gap: 5px; margin: 0 !important; }
             .stat-card { border: 1px solid #000; padding: 2px; border-radius: 5px; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
             .stat-val { font-size: 12pt; margin: 0; }
             .stat-label { font-size: 8pt; margin: 0; }
             
-            /* تنسيق الصور في الطباعة */
             .chart-img-print { width: 100%; height: 100%; object-fit: contain; }
-            .chart-print-wrap { width: 55%; height: 100%; margin: 0 !important; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; }
+            .chart-print-wrap { width: 55%; height: 100%; margin: 0 !important; border: 1px solid #eee; display: flex; align-items: center; justify-content: center; page-break-inside: avoid; }
             
             #print-loss-charts { display: flex !important; justify-content: space-between; height: 180px; margin-bottom: 10px; page-break-inside: avoid; }
             #print-loss-charts .chart-print-wrap { width: 49%; height: 100%; border: 1px solid #eee; }
 
-            .charts-grid { display: block; margin-top: 5px; page-break-inside: avoid; }
-
-            /* ================================================= */
-            /* تنسيقات الاختبار الرسمي الجديدة (Formal Exam) */
-            /* ================================================= */
-            body.printing-formal #formalExamArea { display: block !important; position: relative; width: 100%; margin: 0; padding: 0; direction: rtl; }
-            body.printing-formal #formalExamArea * { visibility: visible; }
-            
+            /* تنسيقات الاختبار الرسمي */
             .formal-container { width: 100%; max-width: 100%; padding: 0; position: relative; z-index: 10; }
-            
-            /* العلامة المائية بخط كايرو */
             .watermark-overlay {
-                position: absolute;
-                top: 0; left: 0; width: 100%; height: 100%;
-                z-index: 0;
+                position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;
                 display: flex; flex-wrap: wrap; align-content: space-around; justify-content: space-around;
                 overflow: hidden; pointer-events: none;
             }
             .watermark-item {
-                transform: rotate(-30deg);
-                color: rgba(0,0,0,0.06); 
-                font-size: 2.5rem;
-                font-weight: 900;
-                font-family: 'Cairo', sans-serif !important; /* استخدام خط كايرو */
-                width: 45%; 
-                text-align: center;
-                margin: 20px;
-                white-space: nowrap;
+                transform: rotate(-30deg); color: rgba(0,0,0,0.06); 
+                font-size: 2.5rem; font-weight: 900; font-family: 'Cairo', sans-serif !important;
+                width: 45%; text-align: center; margin: 20px; white-space: nowrap;
             }
 
             .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px double #000; padding-bottom: 5px; margin-bottom: 15px; position: relative; z-index: 20; background: rgba(255,255,255,0.8); }
             .logo-box { width: 100px; height: 100px; display: flex; align-items: center; justify-content: center; } 
             .header-text { flex: 1; text-align: center; display: flex; flex-direction: column; align-items: center; }
-            
             .school-name-large { font-size: 16pt; font-weight: bold; margin-top: 5px; }
-            .f-question-block { border-bottom: 1px dashed #777; padding: 10px 0; page-break-inside: avoid; position: relative; z-index: 20; }
             
+            .f-question-block { border-bottom: 1px dashed #777; padding: 10px 0; page-break-inside: avoid; position: relative; z-index: 20; }
             .f-indicator-badge { 
-                background-color: #fce4ec !important; 
-                color: #c2185b !important; 
-                border: 1px solid #e91e63; 
-                padding: 2px 8px; 
-                border-radius: 12px; 
-                font-size: 9pt; 
-                font-weight: bold; 
-                display: inline-block; 
-                margin-bottom: 5px;
+                background-color: #fce4ec !important; color: #c2185b !important; border: 1px solid #e91e63; 
+                padding: 2px 8px; border-radius: 12px; font-size: 9pt; font-weight: bold; display: inline-block; margin-bottom: 5px;
                 -webkit-print-color-adjust: exact;
             }
 
@@ -241,24 +255,13 @@
             .f-q-text { font-size: 14pt; font-weight: bold; display: flex; align-items: flex-start; margin-bottom: 10px; line-height: 1.5; font-family: 'Amiri', serif; }
             .f-options-grid { display: grid; gap: 10px; width: 100%; padding-right: 45px; }
             .opts-4col { grid-template-columns: repeat(4, 1fr); }
-            .opts-2col { grid-template-columns: repeat(2, 1fr); }
-            .opts-1col { grid-template-columns: 1fr; }
             .f-option { font-size: 13pt; font-family: 'Amiri', serif; padding: 2px 5px; border-radius: 4px; }
             
             .f-correct-option { 
-                border: 2px solid #27ae60 !important; 
-                background-color: #e8f8f5 !important; 
-                font-weight: bold; 
-                -webkit-print-color-adjust: exact;
-                position: relative;
+                border: 2px solid #27ae60 !important; background-color: #e8f8f5 !important; 
+                font-weight: bold; -webkit-print-color-adjust: exact; position: relative;
             }
-            .f-correct-option::after {
-                content: "✔";
-                color: #27ae60;
-                font-weight: bold;
-                margin-right: 5px;
-                font-size: 1.1em;
-            }
+            .f-correct-option::after { content: "✔"; color: #27ae60; font-weight: bold; margin-right: 5px; font-size: 1.1em; }
 
             #formal-answers-page { page-break-before: always; display: block; position: relative; z-index: 20; }
         }
@@ -285,7 +288,7 @@
     </div>
 
     <div class="main-content">
-        <div style="position: absolute; left: -9999px; top: 0;">
+        <div style="position: fixed; top: 0; left: 0; opacity: 0; pointer-events: none; z-index: -9999;">
             <div style="width: 500px; height: 300px;">
                 <canvas id="tempBellCurveCanvas"></canvas>
             </div>
@@ -397,12 +400,23 @@
         <div id="section-admin" class="section">
             <div class="card-container" style="max-width:1200px;">
                 <h2 style="color:var(--secondary); text-align:center; margin-bottom:20px;">لوحة المعلم</h2>
+                
                 <div class="tab-buttons">
-                    <button class="tab-btn active" onclick="switchTab('questions')">بنك الأسئلة</button>
-                    <button class="tab-btn" onclick="switchTab('analysis')">تحليل الفاقد</button>
-                    <button class="tab-btn" onclick="switchTab('students')">كشوف الدرجات</button>
-                    <button class="tab-btn" onclick="switchTab('control')">التحكم</button>
-                    <button class="tab-btn" onclick="switchTab('settings')">الشعارات</button>
+                    <button class="tab-btn active" onclick="switchTab('questions')">
+                        <i class="fas fa-question-circle"></i> بنك الأسئلة
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('analysis')">
+                        <i class="fas fa-chart-pie"></i> تحليل الفاقد
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('students')">
+                        <i class="fas fa-users-cog"></i> كشوف الدرجات
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('control')">
+                        <i class="fas fa-sliders-h"></i> التحكم
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('settings')">
+                        <i class="fas fa-images"></i> الشعارات
+                    </button>
                 </div>
 
                 <div id="tab-questions" class="tab-content active">
@@ -701,8 +715,6 @@
         let lastFocusedInput = null; let printData = null; let activeWeek = 1; const TOTAL_WEEKS = 36;
         let examStartTime = 0;
         let calculatedStats = {};
-        
-        // متغير عالمي للرسم البياني للطالب
         let studentChartInstance = null;
 
         function sanitizeHTML(str) {
@@ -750,7 +762,6 @@
         function formatMath(text) { if(!text) return ""; if(text.includes("class=")) return text; return text.replace(/\d+/g, match => convertToArabicNumbers(match)); }
         const toAr = n => (n === undefined || n === null ? "0" : n).toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
-        // ================= تهيئة النظام =================
         try { 
             firebase.initializeApp(firebaseConfig); 
             db = firebase.database(); 
@@ -773,15 +784,10 @@
             let target = document.getElementById(id); if(target) target.classList.add('active'); window.scrollTo(0,0); 
         }
 
-        // ========================================================
-        // دالة الدخول الجديدة للوحة المعلم (مع التحقق من قاعدة البيانات)
-        // ========================================================
         function adminLogin() { 
             let inputPass = prompt("أدخل كلمة المرور:");
             if(!inputPass) return;
-            
             document.getElementById('loading-overlay').style.display = 'flex';
-
             db.ref('settings/admin_password').once('value').then(snap => {
                 document.getElementById('loading-overlay').style.display = 'none';
                 let realPass = snap.val();
@@ -823,7 +829,6 @@
             let w = document.getElementById('q-week').value;
 
             let watermarkText = (gradeVal == '9') ? "متوسطة الراشدون بالمربع" : "ابتدائية الراشدون بالمربع";
-            
             let wmHtml = "";
             for(let i=0; i<6; i++) { wmHtml += `<div class="watermark-item">${watermarkText}</div>`; }
             document.getElementById('watermark-layer').innerHTML = wmHtml;
@@ -897,11 +902,11 @@
                     
                     if(window.skillsChart instanceof Chart) window.skillsChart.destroy();
                     let ctx1 = document.getElementById('skillsChart').getContext('2d');
-                    window.skillsChart = new Chart(ctx1, { type: 'bar', data: { labels: skillsArr.map(x => x.name.length > 20 ? x.name.substring(0, 20) + '...' : x.name), datasets: [{ label: 'الطلاب المخفقين', data: skillsArr.map(x => x.count), backgroundColor: skillsArr.map(x => x.percent >= 50 ? '#c0392b' : '#f1c40f') }] }, options: { responsive: true, maintainAspectRatio: false } });
+                    window.skillsChart = new Chart(ctx1, { type: 'bar', data: { labels: skillsArr.map(x => x.name.length > 20 ? x.name.substring(0, 20) + '...' : x.name), datasets: [{ label: 'الطلاب المخفقين', data: skillsArr.map(x => x.count), backgroundColor: skillsArr.map(x => x.percent >= 50 ? '#c0392b' : '#f1c40f') }] }, options: { animation: false, responsive: true, maintainAspectRatio: false } });
                     
                     if(window.levelsChart instanceof Chart) window.levelsChart.destroy();
                     let ctx2 = document.getElementById('levelsChart').getContext('2d');
-                    window.levelsChart = new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(levelsCount), datasets: [{ data: Object.values(levelsCount), backgroundColor: ['#27ae60', '#f39c12', '#c0392b'] }] }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'توزيع مستويات الطلاب' } } } });
+                    window.levelsChart = new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(levelsCount), datasets: [{ data: Object.values(levelsCount), backgroundColor: ['#27ae60', '#f39c12', '#c0392b'] }] }, options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'توزيع مستويات الطلاب' } } } });
 
                     document.getElementById('loss-analysis-view').scrollIntoView({ behavior: 'smooth' });
 
@@ -909,29 +914,23 @@
             }).catch(err => { console.error(err); document.getElementById('loading-overlay').style.display='none'; alert("تعذر الاتصال بقاعدة البيانات."); });
         }
 
-        // ======================= STATS FUNCTIONS =======================
         function calculateStats(students) {
             if(!students || students.length === 0) return null;
             let scores = students.map(s => s.score || 0);
             let totalStudents = scores.length;
             let sum = scores.reduce((a, b) => a + b, 0);
             let avg = sum / totalStudents;
-            
             let max = Math.max(...scores);
             let min = Math.min(...scores);
-            
             let mean = avg;
             let variance = scores.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (totalStudents); 
             let stdDev = Math.sqrt(variance);
-
             let passed = scores.filter(s => s >= (students[0].total/2)).length;
             let passRate = (passed / totalStudents) * 100;
-
             let dist = {};
             let maxPossible = students[0].total || 10;
             for(let i=0; i<=maxPossible; i++) dist[i] = 0;
             scores.forEach(s => { dist[s] = (dist[s]||0) + 1; });
-
             return { avg, max, min, stdDev, passRate, dist, maxPossible, totalStudents };
         }
 
@@ -953,7 +952,7 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    animation: false, // Important for instant print
+                    animation: false, 
                     plugins: { title: {display: true, text: 'المنحنى البياني لتوزيع درجات الطلاب'} },
                     scales: {
                         y: { beginAtZero: true, title: {display:true, text: 'عدد الطلاب'} },
@@ -996,7 +995,6 @@
         function uploadLogo(t, i) { let r = new FileReader(); r.onload = e => { document.getElementById('preview-'+t).src = e.target.result; if(isOnline) db.ref('settings/logos/'+t).set(e.target.result); }; if(i.files[0]) r.readAsDataURL(i.files[0]); }
         function del(k) { if(confirm("هل أنت متأكد من حذف هذا السجل؟")) db.ref('exam_results/'+k).remove().then(()=>fetchStudentsDetailed()); }
         
-        // ==================== الوظيفة المعدلة للطباعة ====================
         function printReport(mode) {
             if(!printData) return alert("الرجاء عرض البيانات أولاً بالضغط على زر العرض.");
             document.getElementById('print-doc-title').innerText = printData.title; 
@@ -1004,15 +1002,12 @@
             if(cachedLogos.ministry) document.getElementById('print-logo-right').src = cachedLogos.ministry;
             if(cachedLogos.vision) document.getElementById('print-logo-left').src = cachedLogos.vision;
             
-            // إخفاء كل العناصر الخاصة بالطباعة مبدئياً
             document.getElementById('print-stats-row').style.display = 'none';
             document.getElementById('print-loss-charts').style.display = 'none';
 
             if(mode === 'grades' && printData.stats) {
                 let st = printData.stats;
                 document.getElementById('print-stats-row').style.display = 'flex';
-                
-                // تعبئة الإحصائيات
                 document.getElementById('print-stats-area').innerHTML = `
                     <div class="stat-card"><div class="stat-val">${toAr(st.avg.toFixed(1))}</div><div class="stat-label">المتوسط الحسابي</div></div>
                     <div class="stat-card"><div class="stat-val">%${toAr(st.passRate.toFixed(0))}</div><div class="stat-label">نسبة النجاح</div></div>
@@ -1020,29 +1015,19 @@
                     <div class="stat-card"><div class="stat-val">${toAr(st.min)}</div><div class="stat-label">أقل درجة</div></div>
                     <div class="stat-card"><div class="stat-val">${toAr(st.stdDev.toFixed(2))}</div><div class="stat-label">الانحراف المعياري</div></div>
                 `;
-                
-                // الحل الجذري لرسم المنحنى في الطباعة (استخدام كانفاس مخفي)
                 let tempCtx = document.getElementById('tempBellCurveCanvas').getContext('2d');
                 if(window.tempChartInstance) window.tempChartInstance.destroy();
-                
                 window.tempChartInstance = renderBellCurve(tempCtx, st);
-                
                 setTimeout(() => {
                     let imgData = window.tempChartInstance.toBase64Image();
                     document.getElementById('printBellCurveImg').src = imgData;
                     buildPrintTable(mode);
                     triggerPrint();
                 }, 500); 
-                
             } else {
-                // وضع الفاقد التعليمي
                 document.getElementById('print-loss-charts').style.display = 'flex';
-                
-                // تحويل الرسوم الموجودة إلى صور مباشرة
                 if(window.skillsChart) document.getElementById('printSkillsImg').src = window.skillsChart.toBase64Image();
                 if(window.levelsChart) document.getElementById('printLevelsImg').src = window.levelsChart.toBase64Image();
-                
-                // إضافة تأخير بسيط جداً لضمان تحميل الصور في الذاكرة قبل الطباعة
                 setTimeout(() => {
                     buildPrintTable(mode);
                     triggerPrint();
@@ -1059,7 +1044,6 @@
                     h+=`<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'')}</td><td>${toAr(st.submissionTime||'-')}</td><td>${toAr(st.timeTaken||'-')}</td><td>${toAr(score)}</td><td>${toAr(wrong)}</td><td><b>${toAr(score)} / ${toAr(total)}</b></td><td>${st.level||'-'}</td></tr>`; 
                 });
             } else {
-                // تعديل مسمى العمود هنا
                 h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#eee;"><th style="width:40%;">المهارة</th><th style="width:20%;">عدد الطلاب المخفقين</th><th style="width:20%;">النسبة</th><th style="width:20%;">التوصية</th></tr></thead><tbody>`;
                 printData.content.forEach(sk=> h+=`<tr><td>${sk.name}</td><td>${toAr(sk.count)}</td><td>%${toAr(sk.percent)}</td><td>${sk.percent>50?"خطة علاجية":"دعم"}</td></tr>`);
             }
@@ -1073,13 +1057,16 @@
             setTimeout(function() { 
                 window.print();
                 setTimeout(() => { document.body.classList.remove('printing-report'); }, 1000);
-            }, 500);
+            }, 800);
         }
 
         function exportToExcel() {
             try {
                 if(typeof XLSX === 'undefined') { alert("⚠️ جاري تحميل مكتبة الإكسل، يرجى الانتظار قليلاً ثم المحاولة."); return; }
-                if(!printData || !printData.content || printData.content.length === 0) { alert("لا توجد بيانات لتصديرها. الرجاء عرض الكشف أولاً."); return; }
+                if(!printData || !printData.content || printData.content.length === 0) { 
+                    alert("⚠️ لا توجد بيانات جاهزة للتصدير.\nالرجاء الضغط على زر 'عرض الكشف' أو 'عرض التحليل' أولاً لتجهيز البيانات."); 
+                    return; 
+                }
                 document.getElementById('loading-overlay').style.display = 'flex'; 
 
                 let wb = XLSX.utils.book_new(); wb.Workbook = { Views: [{ RTL: true }] }; 
@@ -1106,7 +1093,10 @@
                     {v: "المهارات المفقودة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}
                 ];
                 let dataRows = printData.content.map((st, i) => {
-                    let score = st.score || 0; let total = st.total || 0; let missedText = "";
+                    let score = parseInt(st.score) || 0; 
+                    let total = parseInt(st.total) || 0; 
+                    let wrong = total - score;
+                    let missedText = "";
                     if(Array.isArray(st.missed)) missedText = st.missed.join(" - "); else if(st.missed) missedText = String(st.missed);
                     let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}};
                     return [
@@ -1115,10 +1105,10 @@
                         {v: st.studentId || "-", s: cellStyle},
                         {v: st.submissionTime || "-", s: cellStyle},
                         {v: st.timeTaken || "-", s: cellStyle},
-                        {v: score, s: {...cellStyle, font: {color: {rgb: "008000"}}}},
-                        {v: total - score, s: {...cellStyle, font: {color: {rgb: "FF0000"}}}},
-                        {v: score, s: {...cellStyle, font: {bold: true}}},
-                        {v: total, s: cellStyle},
+                        {v: score, s: {...cellStyle, font: {color: {rgb: "008000"}}, numFmt: "0"}},
+                        {v: wrong, s: {...cellStyle, font: {color: {rgb: "FF0000"}}, numFmt: "0"}},
+                        {v: score, s: {...cellStyle, font: {bold: true}, numFmt: "0"}},
+                        {v: total, s: cellStyle, numFmt: "0"},
                         {v: st.level || "-", s: cellStyle},
                         {v: missedText, s: {...cellStyle, alignment: {horizontal: "right", wrapText: true}}}
                     ];
@@ -1154,42 +1144,25 @@
             state.id = document.getElementById('sID').value; 
             state.grade = document.getElementById('sGrade').value; 
             state.section = document.getElementById('sSection').value; 
-            
-            if(!state.name || !state.grade || !state.id) { 
-                alert("الرجاء إكمال جميع البيانات المطلوبة"); 
-                return; 
-            }
-            
-            // --- التعديل الجديد: التحقق من طول الهوية ---
-            if(state.id.length < 10) {
-                alert("⚠️ خطأ: رقم الهوية يجب أن يتكون من 10 أرقام أو أكثر.");
-                return;
-            }
-            // -------------------------------------------
-            
+            if(!state.name || !state.grade || !state.id) { alert("الرجاء إكمال جميع البيانات المطلوبة"); return; }
+            if(state.id.length < 10) { alert("⚠️ خطأ: رقم الهوية يجب أن يتكون من 10 أرقام أو أكثر."); return; }
             nav('section-subjects');
             checkSubjectStatus();
         }
 
-        // ================= دالة جديدة: فحص حالة الاختبارات =================
         function checkSubjectStatus() {
-            // إعادة تعيين البطاقات للوضع الافتراضي
             ['math', 'sci', 'read'].forEach(sub => {
                 let card = document.getElementById('card-' + sub);
                 card.style.borderColor = "transparent";
                 card.style.background = "#fff";
                 card.querySelector('.status-indicator').innerHTML = '';
             });
-
             if (!isOnline || !db || !state.id) return;
-
-            // جلب نتائج الطالب لهذا الأسبوع فقط
             db.ref('exam_results').orderByChild('studentId').equalTo(state.id).once('value').then(snap => {
                 let takenSubjects = [];
                 if (snap.exists()) {
                     let val = snap.val();
                     Object.values(val).forEach(r => {
-                        // التحقق من أن الطالب اختبر في الأسبوع الحالي النشط
                         if (r.week == activeWeek) {
                             takenSubjects.push(r.subject);
                         }
@@ -1204,20 +1177,16 @@
             subjects.forEach(sub => {
                 let card = document.getElementById('card-' + sub);
                 let statusDiv = card.querySelector('.status-indicator');
-                
                 if (takenList.includes(sub)) {
-                    // الحالة: تم الاختبار (أخضر)
                     card.style.border = "2px solid #27ae60";
                     card.style.background = "#e8f8f5";
                     statusDiv.innerHTML = '<span style="color:#27ae60; font-weight:bold; font-size:0.9rem;">✅ تم الاختبار</span>';
                 } else {
-                    // الحالة: لم يختبر (أحمر خفيف)
                     card.style.border = "2px solid #c0392b";
                     statusDiv.innerHTML = '<span style="color:#c0392b; font-weight:bold; font-size:0.9rem;">⏳ لم يتم الاختبار</span>';
                 }
             });
         }
-        // =================================================================
 
         function selectSubject(sub, el) { state.subject = sub; document.getElementById('models-area').style.display='block'; }
         
@@ -1296,7 +1265,6 @@
             if(examTimer) { clearInterval(examTimer); document.getElementById('exam-timer').style.display = 'none'; }
             let s = 0, m = [], mastered = [];
             let studentAnswers = []; 
-            
             let durationSec = Math.floor((Date.now() - examStartTime) / 1000);
             let durationStr = `${Math.floor(durationSec/60)}:${(durationSec%60).toString().padStart(2,'0')}`;
             let submissionTimeStr = new Date().toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
@@ -1306,7 +1274,6 @@
                 let box = document.getElementById(`q-box-${i}`);
                 let fb = document.getElementById(`fb-${i}`);
                 document.getElementsByName(`q${i}`).forEach(o => o.disabled=true);
-
                 let selectedIndex = sel ? parseInt(sel.value) : -1;
                 studentAnswers.push(selectedIndex);
 
@@ -1346,7 +1313,6 @@
             }
         }
 
-        // تعديل لعرض زر المراجعة والرسم البياني
         function openStudentProfile() { 
             let id = document.getElementById('sID').value; 
             if(!id) return alert("أدخل الهوية"); 
@@ -1357,19 +1323,11 @@
                     let d = Object.keys(rawData).map(key => ({...rawData[key], key: key}));
                     d.sort((a,b) => b.timestamp - a.timestamp); 
                     
-                    // --- الرسم البياني الجديد ---
                     if (d.length > 0) {
                         let latestWeek = d[0].week;
                         let subjectScores = { 'math': 0, 'sci': 0, 'read': 0 };
                         let subjectTotals = { 'math': 1, 'sci': 1, 'read': 1 };
-                        
-                        d.forEach(r => {
-                            if (r.week == latestWeek) {
-                                subjectScores[r.subject] = r.score;
-                                subjectTotals[r.subject] = r.total;
-                            }
-                        });
-
+                        d.forEach(r => { if (r.week == latestWeek) { subjectScores[r.subject] = r.score; subjectTotals[r.subject] = r.total; } });
                         let mathPct = Math.round((subjectScores['math'] / subjectTotals['math']) * 100);
                         let sciPct = Math.round((subjectScores['sci'] / subjectTotals['sci']) * 100);
                         let readPct = Math.round((subjectScores['read'] / subjectTotals['read']) * 100);
@@ -1397,53 +1355,29 @@
                             }
                         });
                     }
-                    // -----------------------------
 
                     let h=""; 
                     d.forEach(r=>{ 
                         let scoreColor = r.score >= (r.total/2) ? '#27ae60' : '#c0392b';
-                        
                         let missedHtml = "";
                         if(r.missed && r.missed.length > 0) {
                             missedHtml = `<div class="pc-skills-sec"><h5 style="color:#c62828">⚠️ مهارات تحتاج تحسين:</h5><div>${r.missed.map(m => `<span class="skill-tag st-missed">${m}</span>`).join('')}</div></div>`;
                         }
-
                         let masteredHtml = "";
                         if(r.mastered && r.mastered.length > 0) {
                             masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div>${r.mastered.map(m => `<span class="skill-tag st-mastered">${m}</span>`).join('')}</div></div>`;
                         } else if (!r.missed || r.missed.length === 0) {
-                            if(r.score == r.total) masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">جميع مهارات الاختبار متقنة 🌟</span></div></div>`;
-                            else masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">باقي مهارات الاختبار</span></div></div>`;
+                             masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">باقي مهارات الاختبار</span></div></div>`;
                         } else {
                              masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">باقي مهارات الاختبار</span></div></div>`;
                         }
-
                         let reviewBtn = "";
                         if(r.studentAnswers) {
                             reviewBtn = `<button class="btn btn-primary" style="width:100%; margin-top:10px; font-size:0.9rem;" onclick="reviewExam('${r.key}')"><i class="fas fa-eye"></i> عرض ورقة الإجابة والتغذية الراجعة</button>`;
                         } else {
                             reviewBtn = `<div style="text-align:center; color:#999; margin-top:10px; font-size:0.8rem;">(لا تتوفر تفاصيل لهذا الاختبار القديم)</div>`;
                         }
-
-                        h+=`
-                        <div class="profile-card">
-                            <div class="pc-header">
-                                <h4>${subMap[r.subject]} <small>(${modelMap[r.model]})</small></h4>
-                                <span>أسبوع ${r.week||'-'}</span>
-                            </div>
-                            <div class="pc-body">
-                                <div class="pc-score-row">
-                                    <div class="pc-score-circle" style="background:${scoreColor}">${toAr(r.score)}</div>
-                                    <div>
-                                        <div style="font-weight:bold; font-size:1.1rem;">${r.level}</div>
-                                        <div style="color:#777; font-size:0.9rem;">الدرجة: ${toAr(r.score)} من ${toAr(r.total)}</div>
-                                    </div>
-                                </div>
-                                ${missedHtml}
-                                ${masteredHtml}
-                                ${reviewBtn}
-                            </div>
-                        </div>`; 
+                        h+=`<div class="profile-card"><div class="pc-header"><h4>${subMap[r.subject]} <small>(${modelMap[r.model]})</small></h4><span>أسبوع ${r.week||'-'}</span></div><div class="pc-body"><div class="pc-score-row"><div class="pc-score-circle" style="background:${scoreColor}">${toAr(r.score)}</div><div><div style="font-weight:bold; font-size:1.1rem;">${r.level}</div><div style="color:#777; font-size:0.9rem;">الدرجة: ${toAr(r.score)} من ${toAr(r.total)}</div></div></div>${missedHtml}${masteredHtml}${reviewBtn}</div></div>`; 
                     }); 
                     document.getElementById('student-history-table').innerHTML = h||"<div style='text-align:center; padding:20px;'>لا توجد سجلات سابقة</div>"; 
                     if(d.length) { document.getElementById('profile-name-disp').innerText = d[0].name; document.getElementById('profile-id-disp').innerText = id; } 
@@ -1451,32 +1385,25 @@
             }
         }
 
-        // ================= دالة المراجعة والتغذية الراجعة =================
         function reviewExam(key) {
             if(!isOnline || !db) return alert("الرجاء الاتصال بالإنترنت");
             document.getElementById('loading-overlay').style.display = 'flex';
-
             db.ref('exam_results/' + key).once('value').then(resSnap => {
                 let result = resSnap.val();
                 if(!result) { document.getElementById('loading-overlay').style.display='none'; return alert("خطأ في البيانات"); }
-
                 db.ref(`questions/${result.subject}/g${result.grade}/w${result.week}/t${result.model}`).once('value').then(qSnap => {
                     document.getElementById('loading-overlay').style.display='none';
                     let questions = qSnap.val() || [];
                     if(!questions.length) return alert("عذراً، يبدو أن الأسئلة الأصلية قد حُذفت أو نُقلت من بنك الأسئلة.");
-
                     let h = "";
                     let answers = result.studentAnswers || [];
-
                     questions.forEach((q, i) => {
                         let cleanQ = sanitizeHTML(q.t);
                         let qText = formatMath(smartFixMath(cleanQ));
                         let userAnsIndex = answers[i] !== undefined ? answers[i] : -1;
                         let isCorrect = (userAnsIndex === q.a);
-                        
                         let boxStyle = "";
                         let feedback = "";
-                        
                         if(isCorrect) {
                             boxStyle = "border:2px solid #27ae60; background-color:#e8f8f5;";
                             feedback = `<div style="margin-top:10px; color:#27ae60; font-weight:bold;">✅ إجابتك صحيحة</div>`;
@@ -1486,24 +1413,16 @@
                             let expHTML = (q.e && q.e.trim()) ? `<div style="background:#fff3cd;color:#856404;padding:8px;margin-top:5px;border-radius:5px;border:1px solid #ffeeba;">💡 <b>التبرير/الطريقة:</b><br>${formatMath(smartFixMath(q.e))}</div>` : "";
                             feedback = `<div style="margin-top:10px; color:#c0392b; font-weight:bold;">❌ إجابتك خاطئة. الإجابة الصحيحة: ${cleanCorrect}</div>${expHTML}`;
                         }
-
                         let qOpts = q.o.map((opt, x) => {
                             let optTxt = formatMath(smartFixMath(sanitizeHTML(opt)));
                             let checked = (x === userAnsIndex) ? "checked" : "";
                             let labelStyle = "";
                             if (x === q.a) labelStyle = "background-color:#27ae60; color:#fff;"; 
                             else if (x === userAnsIndex && !isCorrect) labelStyle = "background-color:#e74c3c; color:#fff;"; 
-
                             return `<label class="option-label" style="pointer-events:none; ${labelStyle}"><input type="radio" disabled ${checked}> ${optTxt}</label>`;
                         }).join('');
-
-                        h += `<div class="question-box" style="${boxStyle}">
-                                <div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div>
-                                <div>${qOpts}</div>
-                                ${feedback}
-                              </div>`;
+                        h += `<div class="question-box" style="${boxStyle}"><div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div>${qOpts}</div>${feedback}</div>`;
                     });
-
                     document.getElementById('review-subtitle').innerText = `${subMap[result.subject]} - الأسبوع ${result.week}`;
                     document.getElementById('review-container').innerHTML = h;
                     nav('section-review');
@@ -1511,9 +1430,7 @@
                 });
             });
         }
-        
         function forceMathRender() { if(window.MathJax) MathJax.typesetPromise(); }
-
         renderList();
     </script>
 </body>
