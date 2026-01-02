@@ -9,6 +9,8 @@
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
@@ -37,8 +39,10 @@
         .frac { display: inline-flex; flex-direction: column; text-align: center; vertical-align: middle; margin: 0 4px; font-family: 'Times New Roman', serif; font-weight: bold; font-size: 1.2rem; }
         .top { border-bottom: 2px solid black; padding: 1px 4px; display: block; line-height: 1; }
         .bottom { padding: 1px 4px; display: block; line-height: 1; }
-        .mixed-num { display: inline-flex; flex-direction: row-reverse; align-items: center; vertical-align: middle; font-family: 'Times New Roman', serif; font-weight: bold; font-size: 1.2rem; }
+        
+        .mixed-num { display: inline-flex; flex-direction: row; align-items: center; vertical-align: middle; font-family: 'Times New Roman', serif; font-weight: bold; font-size: 1.2rem; }
         .mixed-num .whole { margin-right: 8px; font-size: 1.3rem; margin-top: -5px; } 
+        
         .power { display: inline-flex; flex-direction: row-reverse; align-items: flex-start; direction: ltr; font-family: 'Times New Roman', serif; font-weight: bold; }
         .base { font-size: 1.3rem; line-height: 1; }
         .exp { font-size: 0.8rem; margin-bottom: 10px; margin-left: 2px; }
@@ -99,7 +103,6 @@
         #json-editor-area { display: none; background: #2d3436; padding: 15px; border-radius: 10px; margin-bottom: 20px; direction: ltr; }
         #q-json-raw { width: 100%; height: 200px; background: #1e272e; color: #00d2d3; font-family: monospace; border: none; padding: 10px; border-radius: 5px; font-size: 14px; }
         
-        /* ============== تصميم الأزرار الملونة الجديد ============== */
         .tab-buttons { display: flex; gap: 10px; margin-bottom: 25px; background: #fff; padding: 10px; border-radius: 16px; overflow-x: auto; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #eee; }
         .tab-btn { flex: 1; min-width: 120px; padding: 12px 10px; border: 1px solid #f0f0f0; background: #fdfdfd; border-radius: 12px; font-weight: 700; color: #636e72; transition: all 0.3s ease; display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 0.95rem; }
         .tab-btn i { font-size: 1.1rem; transition: 0.3s; }
@@ -109,6 +112,7 @@
         .tab-btn:nth-child(3).active { background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3); }
         .tab-btn:nth-child(4).active { background: linear-gradient(135deg, #c0392b, #e74c3c); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(192, 57, 43, 0.3); }
         .tab-btn:nth-child(5).active { background: linear-gradient(135deg, #006266, #1289a7); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(0, 98, 102, 0.3); }
+        .tab-btn:nth-child(6).active { background: linear-gradient(135deg, #1abc9c, #16a085); color: white; border-color: transparent; box-shadow: 0 4px 10px rgba(26, 188, 156, 0.3); }
 
         .tab-content { display: none; }
         .tab-content.active { display: block; }
@@ -117,6 +121,12 @@
         .simple-table th { background: var(--primary); color: white; padding: 12px; text-align: center; white-space: nowrap; border: 1px solid #145255; }
         .simple-table td { border: 1px solid #ddd; padding: 10px; text-align: center; vertical-align: middle; }
         .simple-table tr:nth-child(even) { background-color: #f9fbfd; }
+        
+        /* === تنسيقات تضخيم الدرجات === */
+        .grade-badge { font-size: 1.4rem; padding: 5px 15px; border-radius: 20px; color: white; font-weight: 900; box-shadow: 0 4px 10px rgba(0,0,0,0.2); display: inline-block; min-width: 60px; line-height: 1.4; }
+        .g-high { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        .g-med { background: linear-gradient(135deg, #f39c12, #f1c40f); }
+        .g-low { background: linear-gradient(135deg, #c0392b, #e74c3c); }
         
         .timer-float { position: fixed; top: 20px; left: 20px; background: #c0392b; color: white; padding: 10px 20px; border-radius: 30px; font-weight: 800; font-size: 1.1rem; z-index: 1500; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; align-items: center; gap: 10px; animation: pulse 2s infinite; }
         
@@ -161,9 +171,6 @@
         /* الطباعة */
         #printableArea, #formalExamArea { display: none; }
 
-        /* ================================================= */
-        /* إصلاح جذري للطباعة على الجوال والكمبيوتر */
-        /* ================================================= */
         @media print {
             html, body { 
                 height: auto !important; 
@@ -179,25 +186,14 @@
             }
             @page { margin: 10mm; size: A4; }
             
-            /* تفعيل مناطق الطباعة وتثبيتها */
             body.printing-report #printableArea { 
                 display: block !important; 
-                position: absolute; 
-                top: 0; left: 0; 
-                width: 100%; 
-                direction: rtl;
-                z-index: 9999;
-                background: white;
+                position: absolute; top: 0; left: 0; width: 100%; direction: rtl; z-index: 9999; background: white;
             }
             
             body.printing-formal #formalExamArea { 
                 display: block !important; 
-                position: absolute; 
-                top: 0; left: 0; 
-                width: 100%; 
-                direction: rtl;
-                z-index: 9999;
-                background: white;
+                position: absolute; top: 0; left: 0; width: 100%; direction: rtl; z-index: 9999; background: white;
             }
 
             #printableArea *, #formalExamArea * { visibility: visible !important; }
@@ -313,11 +309,13 @@
                     </div>
                     <button class="btn btn-primary" style="margin-top:15px; width:100%;" onclick="goToSubjects()">🚀 دخول للاختبار</button>
                     <button class="btn btn-secondary" style="margin-top:10px; width:100%; background:#fff; color:var(--text); border:2px solid #eee;" onclick="openStudentProfile()">📂 ملفي السابق</button>
+                    <div style="margin-top: 25px; font-size: 0.9rem; color: #7f8c8d; font-weight: bold; border-top: 1px solid #eee; padding-top: 15px;">
+                        مصمم المنصة: أ. علي إبراهيم عسيري
+                    </div>
                 </div>
             </div>
         </div>
-
-        <div id="section-subjects" class="section">
+<div id="section-subjects" class="section">
             <div class="card-container">
                 <div style="text-align:center;margin-bottom:20px;">
                     <div class="active-week-badge" id="subject-week-badge"></div>
@@ -404,6 +402,9 @@
                 <div class="tab-buttons">
                     <button class="tab-btn active" onclick="switchTab('questions')">
                         <i class="fas fa-question-circle"></i> بنك الأسئلة
+                    </button>
+                    <button class="tab-btn" onclick="switchTab('database')">
+                        <i class="fas fa-user-plus"></i> قاعدة الطلاب
                     </button>
                     <button class="tab-btn" onclick="switchTab('analysis')">
                         <i class="fas fa-chart-pie"></i> تحليل الفاقد
@@ -541,6 +542,71 @@
                             <button class="btn btn-secondary" style="flex:1; background:#27ae60;" onclick="printFormalExam(true)"><i class="fas fa-check-double"></i> نسخة المعلم (الحل)</button>
                         </div>
                     </div>
+
+                    <div style="margin-top: 20px; padding: 15px; background: #e3f2fd; border-radius: 10px; border: 1px solid #90caf9;">
+                        <h4 style="margin-top:0; color:#1565c0; display:flex; align-items:center; gap:10px;">
+                            <i class="fas fa-cloud-upload-alt"></i> أرشفة النموذج الرسمي (PDF)
+                        </h4>
+                        
+                        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-bottom:10px;">
+                            <div>
+                                <label style="font-size:0.8rem; font-weight:bold;">نوع النموذج:</label>
+                                <select id="archive-model-type" class="form-control" style="margin:0;">
+                                    <option value="student">نسخة الطالب (بدون حل)</option>
+                                    <option value="teacher">نسخة المعلم (مع الحل)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label style="font-size:0.8rem; font-weight:bold;">وجهة الحفظ:</label>
+                                <select id="archive-dest" class="form-control" style="margin:0;">
+                                    <option value="tests">📂 مجلد الاختبارات (Drive)</option>
+                                    <option value="local">💻 حفظ في جهازي</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div style="margin-bottom:10px;">
+                            <label style="font-size:0.8rem; font-weight:bold;">اسم الملف:</label>
+                            <input type="text" id="archive-name" class="form-control" style="margin:0;" placeholder="مثال: اختبار رياضيات الفترة الأولى...">
+                        </div>
+
+                        <button onclick="executeArchiving()" id="btn-archive" class="btn btn-primary" style="width:100%; background: linear-gradient(135deg, #1e3a8a, #3b82f6);">
+                            🚀 تنفيذ الأرشفة
+                        </button>
+                        <div id="archive-status" style="text-align:center; margin-top:5px; font-weight:bold; font-size:0.9rem;"></div>
+                    </div>
+                </div>
+
+                <div id="tab-database" class="tab-content">
+                    <div class="card-container" style="border:1px solid #2980b9;">
+                        <h3 style="color:#2980b9; margin-top:0;">📂 إدارة بيانات الطلاب (الاستيراد والحذف)</h3>
+                        <p style="font-size:0.9rem; color:#777;">قم برفع كشوف الطلاب هنا ليتم حفظهم في النظام ومقارنتهم لاحقاً بمن أدى الاختبار.</p>
+                        
+                        <div style="background:#f0f8ff; padding:15px; border-radius:10px; border:1px solid #bcdff1; margin-bottom:20px;">
+                            <h4 style="margin:0 0 10px 0;">📥 استيراد فصل جديد:</h4>
+                            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                                <select id="db-grade" class="form-control" style="margin:0;"><option value="3">3 ابتدائي</option><option value="6">6 ابتدائي</option><option value="9">3 متوسط</option></select>
+                                <select id="db-section" class="form-control" style="margin:0;"><option value="أ">فصل (أ)</option><option value="ب">فصل (ب)</option><option value="ج">فصل (ج)</option></select>
+                            </div>
+                            <button class="btn btn-primary" style="width:100%;" onclick="document.getElementById('db-upload-file').click()">📂 اختر ملف إكسل (الاسم - الهوية)</button>
+                            <input type="file" id="db-upload-file" hidden accept=".xlsx, .xls" onchange="importStudentDatabase(this)">
+                            <p style="font-size:0.8rem; color:#c0392b; margin-top:5px;">* يجب أن يكون ملف الإكسل يحتوي عمودين: (الاسم) و (رقم الهوية).</p>
+                        </div>
+
+                        <div style="background:#fff; padding:15px; border-radius:10px; border:1px solid #eee;">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                                <h4 style="margin:0;">👥 الطلاب المسجلين حالياً: <span id="db-count">0</span></h4>
+                                <button class="btn btn-danger" onclick="clearClassDatabase()" style="font-size:0.8rem;">🗑️ حذف هذا الفصل</button>
+                            </div>
+                            <button class="btn btn-secondary" onclick="viewClassDatabase()" style="width:100%; margin-bottom:10px;">تحديث العرض</button>
+                            <div style="max-height:300px; overflow-y:auto; border:1px solid #eee;">
+                                <table class="simple-table">
+                                    <thead><tr><th>م</th><th>الاسم</th><th>الهوية</th></tr></thead>
+                                    <tbody id="db-list-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <div id="tab-analysis" class="tab-content">
@@ -571,8 +637,7 @@
                         </div>
                     </div>
                 </div>
-                
-                <div id="tab-students" class="tab-content">
+<div id="tab-students" class="tab-content">
                     <div style="background:#eef2ff; border:1px solid #1b1464; padding:15px; border-radius:10px; margin-bottom:20px; text-align:right;">
                         <h4 style="margin-top:0; color:#1b1464;">🔍 فلاتر الكشف:</h4>
                         <div style="display:flex; gap:10px; flex-wrap:wrap;">
@@ -580,9 +645,11 @@
                             <select id="st-subject" class="form-control" style="margin:0; flex:1;"><option value="math">رياضيات</option><option value="sci">علوم</option><option value="read">لغتي</option></select>
                             <select id="st-model" class="form-control" style="margin:0; flex:1;"><option value="1">تشخيصي</option><option value="2">بنائي</option><option value="3">ختامي</option></select>
                             <select id="st-week" class="form-control" style="margin:0; flex:1;"></select>
-                            <button class="btn btn-primary" onclick="fetchStudentsDetailed()" style="flex:1;">عرض الكشف</button>
+                            <button class="btn btn-primary" onclick="fetchStudentsDetailed()" style="flex:1;">عرض النتائج</button>
+                            <button class="btn btn-warning" onclick="checkMissingFromDB()" style="flex:1;">من لم يختبر (تلقائي)</button>
                         </div>
                     </div>
+
                     <div id="students-view" style="display:none; text-align:right;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                             <h3 style="color:var(--primary);">📋 كشف رصد الدرجات</h3>
@@ -594,21 +661,28 @@
                         <div style="overflow-x:auto;">
                             <table class="simple-table">
                                 <thead>
-                                    <tr>
-                                        <th>م</th>
-                                        <th>اسم الطالب</th>
-                                        <th>رقم الهوية</th>
-                                        <th>الفصل</th>
-                                        <th>وقت التسليم</th>
-                                        <th>المدة</th>
-                                        <th>صحيحة</th>
-                                        <th>خاطئة</th>
-                                        <th>الدرجة</th>
-                                        <th>المستوى</th>
-                                        <th>حذف</th>
-                                    </tr>
+                                    <tr><th>م</th><th>اسم الطالب</th><th>رقم الهوية</th><th>الفصل</th><th>وقت التسليم</th><th>المدة</th><th>صحيحة</th><th>خاطئة</th><th>الدرجة</th><th>المستوى</th><th>حذف</th></tr>
                                 </thead>
                                 <tbody id="students-detailed-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div id="missing-view" style="display:none; text-align:right; margin-top:30px; border-top:2px dashed #ccc; padding-top:20px;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                            <h3 style="color:#c0392b;">⚠️ قائمة الطلاب الذين لم يؤدوا الاختبار</h3>
+                            <div style="display:flex; gap:10px;">
+                                 <button class="btn btn-success" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> إكسل</button>
+                                 <button class="btn btn-secondary" onclick="printReport('missing')"><i class="fas fa-print"></i> طباعة</button>
+                            </div>
+                        </div>
+                        <p style="color:#777; font-size:0.9rem;">يتم المقارنة بناءً على قاعدة بيانات الطلاب المخزنة.</p>
+                        <div style="overflow-x:auto;">
+                            <table class="simple-table">
+                                <thead>
+                                    <tr style="background:#c0392b !important;"><th>م</th><th>اسم الطالب</th><th>رقم الهوية</th><th>الفصل</th><th>الحالة</th></tr>
+                                </thead>
+                                <tbody id="missing-body"></tbody>
                             </table>
                         </div>
                     </div>
@@ -617,8 +691,22 @@
                 <div id="tab-control" class="tab-content">
                     <div class="question-box">
                         <div style="margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #eee;">
-                            <h4 style="color:var(--primary);">📅 تحديد الأسبوع النشط للطلاب:</h4>
-                            <select id="active-week-selector" class="form-control" onchange="saveActiveWeek()"></select>
+                            <h4 style="color:var(--primary);">📅 تحديد الأسبوع النشط لكل مرحلة:</h4>
+                            
+                            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                                <div>
+                                    <label style="font-size:0.85rem; font-weight:bold;">3 ابتدائي (الصفوف الأولية)</label>
+                                    <select id="week-select-3" class="form-control" onchange="saveWeekForGrade('3', this.value)"></select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.85rem; font-weight:bold;">6 ابتدائي (الصفوف العليا)</label>
+                                    <select id="week-select-6" class="form-control" onchange="saveWeekForGrade('6', this.value)"></select>
+                                </div>
+                                <div>
+                                    <label style="font-size:0.85rem; font-weight:bold;">3 متوسط (المتوسطة)</label>
+                                    <select id="week-select-9" class="form-control" onchange="saveWeekForGrade('9', this.value)"></select>
+                                </div>
+                            </div>
                         </div>
                         <div style="padding:15px; background:#fff0f0; border-radius:10px; border:1px solid #e74c3c; margin-bottom:15px;">
                             <h4 style="color:#c0392b; margin-top:0;">⏱️ إعدادات مؤقت الاختبار:</h4>
@@ -714,8 +802,8 @@
             <table class="simple-table" id="formal-answers-table"></table>
         </div>
     </div>
-
-    <script>
+<script>
+        // Platform Designer: Ali Ibrahim Asiri
         const firebaseConfig = { apiKey: "AIzaSyAA-sNJADHy52EK2nEv0DXRdzapSpgZiDo", authDomain: "rashedon-962f5.firebaseapp.com", databaseURL: "https://rashedon-962f5-default-rtdb.europe-west1.firebasedatabase.app", projectId: "rashedon-962f5", storageBucket: "rashedon-962f5.firebasestorage.app", messagingSenderId: "312107179473", appId: "1:312107179473:web:d88e231d6800ce54b654f0" };
         let db = null; let isOnline = false;
         let cachedLogos = { ministry: null, vision: null, school: null };
@@ -726,7 +814,12 @@
         let state = { name: '', id: '', grade: '', section: '', subject: '', model: '' };
         let activeQuestions = [];
         let examTimer = null; let timeLeft = 0; let isTimerEnabled = true; let timerDuration = 10; 
-        let lastFocusedInput = null; let printData = null; let activeWeek = 1; const TOTAL_WEEKS = 36;
+        let lastFocusedInput = null; let printData = null; 
+        
+        let activeWeek = 1; 
+        let activeWeeksMap = { '3': 1, '6': 1, '9': 1 }; 
+        const TOTAL_WEEKS = 36;
+        
         let examStartTime = 0;
         let calculatedStats = {};
         let studentChartInstance = null;
@@ -743,7 +836,7 @@
         }
 
         function populateWeeks() {
-            const selects = ['q-week', 'st-week', 'an-week', 'active-week-selector'];
+            const selects = ['q-week', 'st-week', 'an-week', 'active-week-selector', 'week-select-3', 'week-select-6', 'week-select-9'];
             selects.forEach(id => {
                 const el = document.getElementById(id);
                 if(el) { el.innerHTML = ''; for(let i=1; i<=TOTAL_WEEKS; i++) { let opt = document.createElement('option'); opt.value = i; opt.text = `الأسبوع ${i}`; el.appendChild(opt); } }
@@ -758,7 +851,7 @@
             s = s.replace(/\[كيمياء:(.*?)\]/g, (m, v) => { let f = v.replace(/_(\d+)/g, '<sub>$1</sub>').replace(/\^(\d+|[+-]+)/g, '<sup>$1</sup>').replace(/\^/g, '↑').replace(/v/g, '↓').replace(/->/g, '→'); return `<div class="chem-eq">${f}</div>`; });
             s = s.replace(/\[نواة:(.*?)\|(.*?)\|(.*?)\]/g, (m, sym, mass, atom) => `<div class="nuclear-term"><div class="nuc-nums"><sup>${mass}</sup><sub>${atom}</sub></div><div class="nuc-sym">${sym}</div></div>`);
             s = s.replace(/\[كسر:(.*?)\|(.*?)\]/g, (m, t, b) => `<div class='math-group'><div class='frac'><div class='top'>${t}</div><div class='bottom'>${b}</div></div></div>`);
-            s = s.replace(/\[عدد_كسري:(.*?)\|(.*?)\|(.*?)\]/g, (m, w, t, b) => `<div class='mixed-num'><div class='whole'>${w}</div><div class='frac'><div class='top'>${t}</div><div class='bottom'>${b}</div></div></div>`);
+            s = s.replace(/\[عدد_كسري:(.*?)\|(.*?)\|(.*?)\]/g, (m, w, t, b) => `<div class='mixed-num' style='direction:ltr !important'><div class='whole'>${w}</div><div class='frac'><div class='top'>${t}</div><div class='bottom'>${b}</div></div></div>`);
             s = s.replace(/\[أس:(.*?)\|(.*?)\]/g, (m, b, e) => `<span class='power'><span class='base'>${b}</span><span class='exp'>${e}</span></span>`);
             s = s.replace(/\[مطلق:(.*?)\]/g, (m, v) => `<span class='abs-val'>${v}</span>`);
             s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><circle cx='30' cy='30' r='25' fill='none' stroke='black' stroke-width='2'/><line x1='30' y1='30' x2='55' y2='30' stroke='black' stroke-width='1'/><text x='42' y='25' class='geo-label'>${v}</text></svg></div>`);
@@ -788,7 +881,15 @@
                 if(v.timerDuration) { timerDuration = v.timerDuration; let timerInp = document.getElementById('timer-duration-input'); if(timerInp) timerInp.value = timerDuration; }
                 if(v.m2) { let b = document.getElementById('btn-m2'); if(b) { b.disabled=false; b.classList.remove('btn-locked'); b.innerHTML='بنائي'; } } else { let b = document.getElementById('btn-m2'); if(b) { b.disabled=true; b.classList.add('btn-locked'); b.innerHTML='<i class="fas fa-lock"></i> بنائي'; } }
                 if(v.m3) { let b = document.getElementById('btn-m3'); if(b) { b.disabled=false; b.classList.remove('btn-locked'); b.innerHTML='ختامي'; } } else { let b = document.getElementById('btn-m3'); if(b) { b.disabled=true; b.classList.add('btn-locked'); b.innerHTML='<i class="fas fa-lock"></i> ختامي'; } }
-                if(v.activeWeek) { activeWeek = v.activeWeek; document.querySelectorAll('select[id$="-week"]').forEach(s=>s.value=activeWeek); if(document.getElementById('student-week-badge')) document.getElementById('student-week-badge').innerText = "📅 الأسبوع الحالي: " + activeWeek; if(document.getElementById('subject-week-badge')) document.getElementById('subject-week-badge').innerText = "📅 أسبوع " + activeWeek; }
+                if(v.activeWeeks) {
+                    activeWeeksMap = v.activeWeeks;
+                    if(document.getElementById('week-select-3')) document.getElementById('week-select-3').value = activeWeeksMap['3'];
+                    if(document.getElementById('week-select-6')) document.getElementById('week-select-6').value = activeWeeksMap['6'];
+                    if(document.getElementById('week-select-9')) document.getElementById('week-select-9').value = activeWeeksMap['9'];
+                } else if(v.activeWeek) {
+                     activeWeek = v.activeWeek; 
+                     activeWeeksMap = {'3': activeWeek, '6': activeWeek, '9': activeWeek};
+                }
             }});
         } catch(e) { console.log(e); }
 
@@ -805,15 +906,8 @@
             db.ref('settings/admin_password').once('value').then(snap => {
                 document.getElementById('loading-overlay').style.display = 'none';
                 let realPass = snap.val();
-                if(inputPass === realPass) {
-                    nav('section-admin');
-                } else {
-                    alert("خطأ في كلمة المرور");
-                }
-            }).catch(e => {
-                document.getElementById('loading-overlay').style.display = 'none';
-                alert("خطأ في الاتصال: " + e.message);
-            });
+                if(inputPass === realPass) { nav('section-admin'); } else { alert("خطأ في كلمة المرور"); }
+            }).catch(e => { document.getElementById('loading-overlay').style.display = 'none'; alert("خطأ في الاتصال: " + e.message); });
         }
         
         function switchTab(t) { 
@@ -830,61 +924,112 @@
         function toggleJsonMode() { let j = document.getElementById('json-editor-area'); let v = document.getElementById('visual-editor-area'); if (j.style.display === 'none' || !j.style.display) { j.style.display = 'block'; v.style.display = 'none'; document.getElementById('q-json-raw').value = JSON.stringify(tempQuestionList, null, 2); } else { j.style.display = 'none'; v.style.display = 'block'; } }
         function saveJsonToUI() { try { let d = JSON.parse(document.getElementById('q-json-raw').value); if(Array.isArray(d)) { tempQuestionList = d; renderList(); toggleJsonMode(); } } catch(e) { alert("JSON خطأ"); } }
         
+        function importStudentDatabase(input) {
+            let file = input.files[0]; if(!file) return; let g = document.getElementById('db-grade').value; let s = document.getElementById('db-section').value;
+            let reader = new FileReader();
+            reader.onload = e => {
+                let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+                let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1});
+                let studentsObj = {}; let count = 0;
+                for(let i=1; i<json.length; i++) {
+                    let row = json[i];
+                    if(row[0] && row[1]) {
+                        let name = String(row[0]).trim(); let id = String(row[1]).trim();
+                        studentsObj[id] = { name: name, id: id }; count++;
+                    }
+                }
+                if(count > 0 && isOnline) {
+                    if(confirm(`تم العثور على ${count} طالب. هل تريد حفظهم في فصل ${s} للصف ${g}؟`)) {
+                        db.ref(`school_data/students/${g}/${s}`).set(studentsObj).then(() => { alert("تم الحفظ بنجاح!"); viewClassDatabase(); });
+                    }
+                } else { alert("لم يتم العثور على بيانات صالحة."); }
+            }; reader.readAsArrayBuffer(file); input.value = '';
+        }
+
+        function viewClassDatabase() {
+            let g = document.getElementById('db-grade').value; let s = document.getElementById('db-section').value;
+            if(!isOnline) return;
+            db.ref(`school_data/students/${g}/${s}`).once('value').then(snap => {
+                let data = snap.val() || {}; let list = Object.values(data);
+                document.getElementById('db-count').innerText = list.length;
+                let h = "";
+                list.forEach((st, i) => { h += `<tr><td>${i+1}</td><td>${st.name}</td><td>${st.id}</td></tr>`; });
+                document.getElementById('db-list-body').innerHTML = h || "<tr><td colspan='3'>لا يوجد طلاب مسجلين لهذا الفصل</td></tr>";
+            });
+        }
+
+        function clearClassDatabase() {
+            let g = document.getElementById('db-grade').value; let s = document.getElementById('db-section').value;
+            if(confirm("تحذير: سيتم حذف جميع أسماء الطلاب المسجلين لهذا الفصل. هل أنت متأكد؟")) {
+                db.ref(`school_data/students/${g}/${s}`).remove().then(() => { alert("تم الحذف"); viewClassDatabase(); });
+            }
+        }
+
+        function checkMissingFromDB() {
+            if(!isOnline || !db) { alert("النظام غير متصل بالإنترنت"); return; }
+            let g = document.getElementById('st-grade').value; let subject = document.getElementById('st-subject').value; let model = document.getElementById('st-model').value; let week = document.getElementById('st-week').value;
+            document.getElementById('loading-overlay').style.display='flex';
+            db.ref(`school_data/students/${g}`).once('value').then(studSnap => {
+                let allRegisteredStudents = []; let classesData = studSnap.val() || {};
+                Object.keys(classesData).forEach(sectionKey => {
+                    let sectionStudents = classesData[sectionKey];
+                    Object.values(sectionStudents).forEach(st => { st.section = sectionKey; allRegisteredStudents.push(st); });
+                });
+                if(allRegisteredStudents.length === 0) { document.getElementById('loading-overlay').style.display='none'; alert("⚠️ لا توجد قاعدة بيانات طلاب لهذا الصف."); return; }
+                db.ref('exam_results').once('value').then(resSnap => {
+                    let takenIDs = []; let resData = resSnap.val() || {};
+                    Object.values(resData).forEach(r => { if(r.grade == g && r.subject == subject && r.model == model && r.week == week) { takenIDs.push(String(r.studentId).trim()); } });
+                    let missingStudents = [];
+                    allRegisteredStudents.forEach(st => { if(!takenIDs.includes(String(st.id).trim())) { missingStudents.push(st); } });
+                    document.getElementById('loading-overlay').style.display='none'; document.getElementById('students-view').style.display='none'; document.getElementById('missing-view').style.display='block';
+                    printData = { type: 'missing', title: 'تقرير الطلاب الغائبين عن الاختبار', subtitle: `${subMap[subject]} - ${gradeMap[g]} - نموذج ${modelMap[model]} - أسبوع ${week}`, content: missingStudents };
+                    let h = "";
+                    if(missingStudents.length === 0) { h = "<tr><td colspan='5' style='color:green; font-weight:bold;'>🎉 ممتاز! جميع الطلاب المسجلين في القاعدة أدوا الاختبار.</td></tr>"; } 
+                    else {
+                        missingStudents.forEach((st, i) => { h += `<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.id)}</td><td>${st.section}</td><td style="color:#c0392b; font-weight:bold;">غائب</td></tr>`; });
+                    }
+                    document.getElementById('missing-body').innerHTML = h;
+                });
+            });
+        }
+
         function printFormalExam(withAnswers) {
             if(!tempQuestionList.length) return alert("لا توجد أسئلة");
             let qHtml = "", ansHtml = "";
             let showInd = document.getElementById('chk-print-indicators').checked;
-            
-            let g = document.getElementById('q-grade');
-            let gradeVal = g.value; 
-            let gradeText = g.options[g.selectedIndex].text;
-            let s = document.getElementById('q-subject').value;
-            let m = document.getElementById('q-model').value;
-            let w = document.getElementById('q-week').value;
-
+            let g = document.getElementById('q-grade'); let gradeVal = g.value; let gradeText = g.options[g.selectedIndex].text;
+            let s = document.getElementById('q-subject').value; let m = document.getElementById('q-model').value; let w = document.getElementById('q-week').value;
             let watermarkText = (gradeVal == '9') ? "متوسطة الراشدون بالمربع" : "ابتدائية الراشدون بالمربع";
             let wmHtml = "";
             for(let i=0; i<6; i++) { wmHtml += `<div class="watermark-item">${watermarkText}</div>`; }
             document.getElementById('watermark-layer').innerHTML = wmHtml;
-
             document.getElementById('f-exam-title').innerText = withAnswers ? "اختبار نافس (نموذج الإجابة)" : "اختبار نافس";
             document.getElementById('f-exam-subtitle').innerText = `${subMap[s]} - ${gradeText} - ${modelMap[m]} - الأسبوع ${w}`;
-
             tempQuestionList.forEach((q, i) => {
                 let txt = formatMath(smartFixMath(q.t));
                 let num = toAr(i + 1);
                 let indHtml = showInd && q.s ? `<div class="f-indicator-badge">${q.s}</div>` : "";
-                
                 let optionsHtml = q.o.map((x, idx) => {
                     let optText = formatMath(smartFixMath(x));
                     let isCorrect = (withAnswers && idx === q.a);
                     let correctClass = isCorrect ? "f-correct-option" : "";
                     return `<div class="f-option ${correctClass}">(${['أ','ب','ج','د'][idx]}) ${optText}</div>`;
                 }).join('');
-
-                qHtml += `<div class="f-question-block">${indHtml}<div class="f-q-text"><span class="f-q-number">${num}</span><div style="width:100%">${txt}</div></div>
-                <div class="f-options-grid opts-4col">${optionsHtml}</div></div>`;
-                
+                qHtml += `<div class="f-question-block">${indHtml}<div class="f-q-text"><span class="f-q-number">${num}</span><div style="width:100%">${txt}</div></div><div class="f-options-grid opts-4col">${optionsHtml}</div></div>`;
                 ansHtml += `<tr><td>${num}</td><td>(${['أ','ب','ج','د'][q.a]})</td><td>${q.s||'-'}</td></tr>`;
             });
-
             document.getElementById('formal-questions-body').innerHTML = qHtml;
             document.getElementById('formal-answers-table').innerHTML = `<thead><tr><th>م</th><th>الإجابة</th><th>المؤشر</th></tr></thead><tbody>${ansHtml}</tbody>`;
-            
             if(cachedLogos.ministry) document.getElementById('f-logo-right').src = cachedLogos.ministry;
             if(cachedLogos.vision) document.getElementById('f-logo-left').src = cachedLogos.vision;
-
             document.body.classList.add('printing-formal');
-            setTimeout(() => { 
-                if(window.MathJax) MathJax.typesetPromise().then(() => { window.print(); setTimeout(()=>document.body.classList.remove('printing-formal'),1000); });
-            }, 500);
+            setTimeout(() => { if(window.MathJax) MathJax.typesetPromise().then(() => { window.print(); setTimeout(()=>document.body.classList.remove('printing-formal'),1000); }); }, 500);
         }
 
         function saveQuestionsToDB() { if(!isOnline) return alert("لا يوجد اتصال"); let s = document.getElementById('q-subject').value, g = document.getElementById('q-grade').value, w = document.getElementById('q-week').value, m = document.getElementById('q-model').value; db.ref(`questions/${s}/g${g}/w${w}/t${m}`).set(tempQuestionList).then(()=>alert("تم الحفظ")); }
         function loadQuestionsForEdit() { if(!isOnline) return alert("لا يوجد اتصال"); let s = document.getElementById('q-subject').value, g = document.getElementById('q-grade').value, w = document.getElementById('q-week').value, m = document.getElementById('q-model').value; db.ref(`questions/${s}/g${g}/w${w}/t${m}`).once('value').then(snap => { tempQuestionList = snap.val() || []; renderList(); alert(tempQuestionList.length ? "تم التحميل" : "لا توجد أسئلة"); }); }
         function importQuestionsFromExcel(input) { let file = input.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = e => { let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}); for(let i=1; i<json.length; i++) { let r = json[i]; if(r[0]) tempQuestionList.push({ t: sanitizeHTML(r[0]), o: [r[1],r[2],r[3],r[4]].map(sanitizeHTML), a: (r[5]||1)-1, s: r[6]||"", e: r[7]||"" }); } renderList(); }; reader.readAsArrayBuffer(file); }
-
-        function analyzeLoss() {
+function analyzeLoss() {
             if(!isOnline || !db) { alert("تأكد من اتصالك بالإنترنت"); return; }
             let g = document.getElementById('an-grade').value; let s = document.getElementById('an-subject').value; let m = document.getElementById('an-model').value; let w = document.getElementById('an-week').value;
             document.getElementById('loading-overlay').style.display='flex'; document.getElementById('loss-analysis-view').style.display='none';
@@ -895,54 +1040,37 @@
                     let filtered = all.filter(r => r.grade == g && r.subject == s && r.model == m && r.week == w);
                     if(filtered.length === 0) { alert(`لا توجد نتائج مسجلة في الأسبوع ${w}. تأكد من الفلتر.`); return; }
                     document.getElementById('loss-analysis-view').style.display='block';
-                    
-                    let skillCounts = {}; let totalMissedCount = 0;
-                    let levelsCount = { "متقدم 🌟": 0, "متوسط 👍": 0, "يحتاج تحسين 🚀": 0 };
-
+                    let skillCounts = {}; let levelsCount = { "متقدم 🌟": 0, "متوسط 👍": 0, "يحتاج تحسين 🚀": 0 };
                     filtered.forEach(r => { 
-                        if(r.missed && Array.isArray(r.missed)) { r.missed.forEach(skill => { let skillName = skill || "سؤال غير محدد المهارة"; skillCounts[skillName] = (skillCounts[skillName] || 0) + 1; totalMissedCount++; }); }
+                        if(r.missed && Array.isArray(r.missed)) { r.missed.forEach(skill => { let skillName = skill || "سؤال غير محدد المهارة"; skillCounts[skillName] = (skillCounts[skillName] || 0) + 1; }); }
                         if(r.level && levelsCount[r.level] !== undefined) levelsCount[r.level]++;
-                        else if(r.level) levelsCount[r.level] = (levelsCount[r.level] || 0) + 1;
                     });
-                    
                     let skillsArr = Object.entries(skillCounts).map(([k,v]) => ({name: k, count: v, percent: Math.round((v/filtered.length)*100)}));
                     skillsArr.sort((a,b) => b.percent - a.percent);
-                    
                     printData = { type: 'loss', title: 'تقرير الفاقد التعليمي وتحليل المهارات', subtitle: `${subMap[s]} - ${gradeMap[g]} - نموذج ${modelMap[m]} - أسبوع ${w}`, content: skillsArr, total: filtered.length };
-
                     let h = "";
                     skillsArr.forEach(sk => { let rowColor = sk.percent >= 50 ? "background-color:#ffebee;" : ""; let action = sk.percent >= 50 ? "⚠️ خطة علاجية" : "دعم وإثراء"; h += `<tr style="${rowColor}"><td>${sk.name}</td><td>${toAr(sk.count)}</td><td>%${toAr(sk.percent)}</td><td style="font-weight:bold; color:${sk.percent>=50?'red':'green'}">${action}</td></tr>`; });
                     document.getElementById('skills-list-body').innerHTML = h || "<tr><td colspan='4'>لا يوجد فاقد مهاري</td></tr>";
-                    
                     if(window.skillsChart instanceof Chart) window.skillsChart.destroy();
                     let ctx1 = document.getElementById('skillsChart').getContext('2d');
                     window.skillsChart = new Chart(ctx1, { type: 'bar', data: { labels: skillsArr.map(x => x.name.length > 20 ? x.name.substring(0, 20) + '...' : x.name), datasets: [{ label: 'الطلاب المخفقين', data: skillsArr.map(x => x.count), backgroundColor: skillsArr.map(x => x.percent >= 50 ? '#c0392b' : '#f1c40f') }] }, options: { animation: false, responsive: true, maintainAspectRatio: false } });
-                    
                     if(window.levelsChart instanceof Chart) window.levelsChart.destroy();
                     let ctx2 = document.getElementById('levelsChart').getContext('2d');
                     window.levelsChart = new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(levelsCount), datasets: [{ data: Object.values(levelsCount), backgroundColor: ['#27ae60', '#f39c12', '#c0392b'] }] }, options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'توزيع مستويات الطلاب' } } } });
-
                     document.getElementById('loss-analysis-view').scrollIntoView({ behavior: 'smooth' });
-
                 } catch(err) { console.error("Error in analysis:", err); alert("حدث خطأ غير متوقع."); }
             }).catch(err => { console.error(err); document.getElementById('loading-overlay').style.display='none'; alert("تعذر الاتصال بقاعدة البيانات."); });
         }
 
         function calculateStats(students) {
             if(!students || students.length === 0) return null;
-            let scores = students.map(s => s.score || 0);
-            let totalStudents = scores.length;
-            let sum = scores.reduce((a, b) => a + b, 0);
-            let avg = sum / totalStudents;
-            let max = Math.max(...scores);
-            let min = Math.min(...scores);
-            let mean = avg;
-            let variance = scores.reduce((acc, val) => acc + Math.pow(val - mean, 2), 0) / (totalStudents); 
+            let scores = students.map(s => s.score || 0); let totalStudents = scores.length;
+            let sum = scores.reduce((a, b) => a + b, 0); let avg = sum / totalStudents;
+            let max = Math.max(...scores); let min = Math.min(...scores);
+            let variance = scores.reduce((acc, val) => acc + Math.pow(val - avg, 2), 0) / (totalStudents); 
             let stdDev = Math.sqrt(variance);
-            let passed = scores.filter(s => s >= (students[0].total/2)).length;
-            let passRate = (passed / totalStudents) * 100;
-            let dist = {};
-            let maxPossible = students[0].total || 10;
+            let passed = scores.filter(s => s >= (students[0].total/2)).length; let passRate = (passed / totalStudents) * 100;
+            let dist = {}; let maxPossible = students[0].total || 10;
             for(let i=0; i<=maxPossible; i++) dist[i] = 0;
             scores.forEach(s => { dist[s] = (dist[s]||0) + 1; });
             return { avg, max, min, stdDev, passRate, dist, maxPossible, totalStudents };
@@ -951,28 +1079,8 @@
         function renderBellCurve(ctx, stats) {
             return new Chart(ctx, {
                 type: 'line',
-                data: {
-                    labels: Object.keys(stats.dist),
-                    datasets: [{
-                        label: 'توزيع الدرجات (المنحنى الجبلي)',
-                        data: Object.values(stats.dist),
-                        borderColor: '#2980b9',
-                        backgroundColor: 'rgba(52, 152, 219, 0.4)',
-                        fill: true,
-                        tension: 0.4,
-                        pointRadius: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    animation: false, 
-                    plugins: { title: {display: true, text: 'المنحنى البياني لتوزيع درجات الطلاب'} },
-                    scales: {
-                        y: { beginAtZero: true, title: {display:true, text: 'عدد الطلاب'} },
-                        x: { title: {display:true, text: 'الدرجة'} }
-                    }
-                }
+                data: { labels: Object.keys(stats.dist), datasets: [{ label: 'توزيع الدرجات (المنحنى الجبلي)', data: Object.values(stats.dist), borderColor: '#2980b9', backgroundColor: 'rgba(52, 152, 219, 0.4)', fill: true, tension: 0.4, pointRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { title: {display: true, text: 'المنحنى البياني لتوزيع درجات الطلاب'} }, scales: { y: { beginAtZero: true, title: {display:true, text: 'عدد الطلاب'} }, x: { title: {display:true, text: 'الدرجة'} } } }
             });
         }
 
@@ -980,6 +1088,7 @@
             if(!isOnline || !db) { alert("النظام غير متصل بالإنترنت"); return; }
             let g = document.getElementById('st-grade').value; let s = document.getElementById('st-subject').value; let m = document.getElementById('st-model').value; let w = document.getElementById('st-week').value;
             document.getElementById('loading-overlay').style.display='flex';
+            document.getElementById('missing-view').style.display = 'none';
             db.ref('exam_results').once('value').then(snap => {
                 document.getElementById('loading-overlay').style.display='none';
                 let data = snap.val() || {}; let filtered = [];
@@ -987,24 +1096,34 @@
                 if(filtered.length === 0) { alert(`لا توجد نتائج في الأسبوع ${w} لهذا النموذج`); return; }
                 document.getElementById('students-view').style.display='block';
                 filtered.sort((a,b) => (b.score||0) - (a.score||0));
-                
                 calculatedStats = calculateStats(filtered);
-
-                printData = { type: 'grades', title: 'كشف رصد درجات الطلاب', subtitle: `${subMap[s]} - ${gradeMap[g]} - نموذج ${modelMap[m]} - أسبوع ${w}`, content: filtered, stats: calculatedStats };
-                
+                printData = { type: 'grades', title: 'كشف رصد الدرجات', subtitle: `${subMap[s]} - ${gradeMap[g]} - نموذج ${modelMap[m]} - أسبوع ${w}`, content: filtered, stats: calculatedStats };
                 let h = "";
                 filtered.forEach((st, i) => {
                     let sc = st.score !== undefined ? st.score : 0; let tot = st.total !== undefined ? st.total : 0; let wrong = tot - sc;
-                    let timeVal = st.timeTaken ? st.timeTaken : '-';
-                    let subTime = st.submissionTime ? st.submissionTime : '-';
-                    h += `<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'-')}</td><td style="font-weight:bold; color:var(--primary);">${st.section ? 'فصل '+st.section : '-'}</td><td>${toAr(subTime)}</td><td>${toAr(timeVal)}</td><td style="color:green">${toAr(sc)}</td><td style="color:red">${toAr(wrong)}</td><td><b>${toAr(sc)} / ${toAr(tot)}</b></td><td>${st.level || '-'}</td><td><button onclick="del('${st.key}')" style="color:red;border:none;background:none;cursor:pointer;">❌</button></td></tr>`;
+                    let percent = tot > 0 ? (sc / tot) * 100 : 0;
+                    let badgeClass = percent >= 80 ? 'g-high' : (percent >= 50 ? 'g-med' : 'g-low');
+                    let displayScore = `<div class="grade-badge ${badgeClass}">${toAr(sc)}</div>`;
+                    h += `<tr>
+                        <td>${toAr(i+1)}</td>
+                        <td style="text-align:right;">${st.name}</td>
+                        <td>${toAr(st.studentId||'-')}</td>
+                        <td style="font-weight:bold; color:var(--primary);">${st.section ? 'فصل '+st.section : '-'}</td>
+                        <td>${toAr(st.submissionTime||'-')}</td>
+                        <td>${toAr(st.timeTaken||'-')}</td>
+                        <td style="color:green; font-weight:bold;">${toAr(sc)}</td>
+                        <td style="color:red; font-weight:bold;">${toAr(wrong)}</td>
+                        <td>${displayScore}</td>
+                        <td>${st.level || '-'}</td>
+                        <td><button onclick="del('${st.key}')" style="color:red;border:none;background:none;cursor:pointer;">❌</button></td>
+                    </tr>`;
                 });
                 document.getElementById('students-detailed-body').innerHTML = h;
             });
         }
         
         function toggleExam(k) { if(isOnline) db.ref('settings/'+k).set(document.getElementById('toggle-'+k).checked); }
-        function saveActiveWeek() { if(isOnline) db.ref('settings/activeWeek').set(document.getElementById('active-week-selector').value); }
+        function saveWeekForGrade(grade, weekVal) { if(isOnline) { activeWeeksMap[grade] = parseInt(weekVal); db.ref('settings/activeWeeks/' + grade).set(parseInt(weekVal)); } }
         function saveTimerSettings() { if(isOnline) { db.ref('settings/timerEnabled').set(document.getElementById('toggle-timer').checked); db.ref('settings/timerDuration').set(document.getElementById('timer-duration-input').value); } }
         function uploadLogo(t, i) { let r = new FileReader(); r.onload = e => { document.getElementById('preview-'+t).src = e.target.result; if(isOnline) db.ref('settings/logos/'+t).set(e.target.result); }; if(i.files[0]) r.readAsDataURL(i.files[0]); }
         function del(k) { if(confirm("هل أنت متأكد من حذف هذا السجل؟")) db.ref('exam_results/'+k).remove().then(()=>fetchStudentsDetailed()); }
@@ -1015,48 +1134,38 @@
             document.getElementById('print-doc-subtitle').innerText = printData.subtitle;
             if(cachedLogos.ministry) document.getElementById('print-logo-right').src = cachedLogos.ministry;
             if(cachedLogos.vision) document.getElementById('print-logo-left').src = cachedLogos.vision;
-            
             document.getElementById('print-stats-row').style.display = 'none';
             document.getElementById('print-loss-charts').style.display = 'none';
-
             if(mode === 'grades' && printData.stats) {
                 let st = printData.stats;
                 document.getElementById('print-stats-row').style.display = 'flex';
-                document.getElementById('print-stats-area').innerHTML = `
-                    <div class="stat-card"><div class="stat-val">${toAr(st.avg.toFixed(1))}</div><div class="stat-label">المتوسط الحسابي</div></div>
-                    <div class="stat-card"><div class="stat-val">%${toAr(st.passRate.toFixed(0))}</div><div class="stat-label">نسبة النجاح</div></div>
-                    <div class="stat-card"><div class="stat-val">${toAr(st.max)}</div><div class="stat-label">أعلى درجة</div></div>
-                    <div class="stat-card"><div class="stat-val">${toAr(st.min)}</div><div class="stat-label">أقل درجة</div></div>
-                    <div class="stat-card"><div class="stat-val">${toAr(st.stdDev.toFixed(2))}</div><div class="stat-label">الانحراف المعياري</div></div>
-                `;
+                document.getElementById('print-stats-area').innerHTML = `<div class="stat-card"><div class="stat-val">${toAr(st.avg.toFixed(1))}</div><div class="stat-label">المتوسط الحسابي</div></div><div class="stat-card"><div class="stat-val">%${toAr(st.passRate.toFixed(0))}</div><div class="stat-label">نسبة النجاح</div></div><div class="stat-card"><div class="stat-val">${toAr(st.max)}</div><div class="stat-label">أعلى درجة</div></div><div class="stat-card"><div class="stat-val">${toAr(st.min)}</div><div class="stat-label">أقل درجة</div></div><div class="stat-card"><div class="stat-val">${toAr(st.stdDev.toFixed(2))}</div><div class="stat-label">الانحراف المعياري</div></div>`;
                 let tempCtx = document.getElementById('tempBellCurveCanvas').getContext('2d');
                 if(window.tempChartInstance) window.tempChartInstance.destroy();
                 window.tempChartInstance = renderBellCurve(tempCtx, st);
-                setTimeout(() => {
-                    let imgData = window.tempChartInstance.toBase64Image();
-                    document.getElementById('printBellCurveImg').src = imgData;
-                    buildPrintTable(mode);
-                    triggerPrint();
-                }, 500); 
+                setTimeout(() => { document.getElementById('printBellCurveImg').src = window.tempChartInstance.toBase64Image(); buildPrintTable(mode); triggerPrint(); }, 500); 
+            } else if (mode === 'missing') {
+                setTimeout(() => { buildPrintTable(mode); triggerPrint(); }, 300);
             } else {
                 document.getElementById('print-loss-charts').style.display = 'flex';
                 if(window.skillsChart) document.getElementById('printSkillsImg').src = window.skillsChart.toBase64Image();
                 if(window.levelsChart) document.getElementById('printLevelsImg').src = window.levelsChart.toBase64Image();
-                setTimeout(() => {
-                    buildPrintTable(mode);
-                    triggerPrint();
-                }, 300);
+                setTimeout(() => { buildPrintTable(mode); triggerPrint(); }, 300);
             }
         }
 
         function buildPrintTable(mode) {
             let h = "";
             if(mode === 'grades') {
-                h = `<table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:10px;"><thead><tr style="background:#eee;"><th style="width:5%;">م</th><th style="width:20%;">الاسم</th><th style="width:12%;">الهوية</th><th style="width:8%;">الفصل</th><th style="width:10%;">وقت التسليم</th><th style="width:10%;">المدة</th><th style="width:8%;">صحيحة ✅</th><th style="width:8%;">خاطئة ❌</th><th style="width:9%;">الدرجة</th><th style="width:10%;">المستوى</th></tr></thead><tbody>`;
+                h = `<table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:11pt;"><thead><tr style="background:#eee;"><th style="width:5%;">م</th><th style="width:20%;">الاسم</th><th style="width:12%;">الهوية</th><th style="width:8%;">الفصل</th><th style="width:10%;">وقت التسليم</th><th style="width:10%;">المدة</th><th style="width:8%;">صحيحة ✅</th><th style="width:8%;">خاطئة ❌</th><th style="width:9%;">الدرجة</th><th style="width:10%;">المستوى</th></tr></thead><tbody>`;
                 printData.content.forEach((st,i)=> { 
                     let score = st.score || 0; let total = st.total || 0; let wrong = total - score; 
-                    h+=`<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'')}</td><td>${st.section || '-'}</td><td>${toAr(st.submissionTime||'-')}</td><td>${toAr(st.timeTaken||'-')}</td><td>${toAr(score)}</td><td>${toAr(wrong)}</td><td><b>${toAr(score)} / ${toAr(total)}</b></td><td>${st.level||'-'}</td></tr>`; 
+                    let scoreStyle = "font-size:16pt; font-weight:bold;";
+                    h+=`<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'')}</td><td>${st.section || '-'}</td><td>${toAr(st.submissionTime||'-')}</td><td>${toAr(st.timeTaken||'-')}</td><td>${toAr(score)}</td><td>${toAr(wrong)}</td><td style="${scoreStyle}">${toAr(score)} / ${toAr(total)}</td><td>${st.level||'-'}</td></tr>`; 
                 });
+            } else if (mode === 'missing') {
+                h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#c0392b; color:white;"><th style="width:10%;">م</th><th style="width:40%;">اسم الطالب</th><th style="width:30%;">رقم الهوية</th><th style="width:20%;">الفصل</th></tr></thead><tbody>`;
+                printData.content.forEach((st, i) => { h += `<tr><td>${toAr(i+1)}</td><td>${st.name}</td><td>${toAr(st.id)}</td><td>${st.section}</td></tr>`; });
             } else {
                 h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#eee;"><th style="width:40%;">المهارة</th><th style="width:20%;">عدد الطلاب المخفقين</th><th style="width:20%;">النسبة</th><th style="width:20%;">التوصية</th></tr></thead><tbody>`;
                 printData.content.forEach(sk=> h+=`<tr><td>${sk.name}</td><td>${toAr(sk.count)}</td><td>%${toAr(sk.percent)}</td><td>${sk.percent>50?"خطة علاجية":"دعم"}</td></tr>`);
@@ -1068,109 +1177,62 @@
         function triggerPrint() {
             document.body.classList.remove('printing-formal');
             document.body.classList.add('printing-report');
-            setTimeout(function() { 
-                window.print();
-                setTimeout(() => { document.body.classList.remove('printing-report'); }, 1000);
-            }, 800);
+            setTimeout(function() { window.print(); setTimeout(() => { document.body.classList.remove('printing-report'); }, 1000); }, 800);
         }
 
         function exportToExcel() {
             try {
                 if(typeof XLSX === 'undefined') { alert("⚠️ جاري تحميل مكتبة الإكسل، يرجى الانتظار قليلاً ثم المحاولة."); return; }
-                if(!printData || !printData.content || printData.content.length === 0) { 
-                    alert("⚠️ لا توجد بيانات جاهزة للتصدير.\nالرجاء الضغط على زر 'عرض الكشف' أو 'عرض التحليل' أولاً لتجهيز البيانات."); 
-                    return; 
-                }
+                if(!printData || !printData.content || printData.content.length === 0) { alert("⚠️ لا توجد بيانات جاهزة للتصدير.\nالرجاء الضغط على زر العرض أولاً."); return; }
                 document.getElementById('loading-overlay').style.display = 'flex'; 
-
                 let wb = XLSX.utils.book_new(); wb.Workbook = { Views: [{ RTL: true }] }; 
-                let headers = [
-                    [{v: "المملكة العربية السعودية", s: {font: {bold: true}, alignment: {horizontal: "center"}}}],
-                    [{v: "وزارة التعليم", s: {font: {bold: true}, alignment: {horizontal: "center"}}}],
-                    [{v: "الإدارة العامة للتعليم بمنطقة عسير", s: {font: {bold: true}, alignment: {horizontal: "center"}}}],
-                    [{v: "ابتدائية ومتوسطة الراشدون بالمربع", s: {font: {bold: true, color: {rgb: "006266"}}, alignment: {horizontal: "center"}}}],
-                    [], 
-                    [{v: printData.title + " - " + printData.subtitle, s: {font: {bold: true, sz: 14}, alignment: {horizontal: "center"}, fill: {fgColor: {rgb: "EEEEEE"}}}}],
-                    [] 
-                ];
-                let tableHead = [
-                    {v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "وقت التسليم", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "الوقت المستغرق", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "صحيحة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "خاطئة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "الدرجة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "الدرجة الكلية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "المستوى", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}},
-                    {v: "المهارات المفقودة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}
-                ];
-                let dataRows = printData.content.map((st, i) => {
-                    let score = parseInt(st.score) || 0; 
-                    let total = parseInt(st.total) || 0; 
-                    let wrong = total - score;
-                    let missedText = "";
-                    if(Array.isArray(st.missed)) missedText = st.missed.join(" - "); else if(st.missed) missedText = String(st.missed);
-                    let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}};
-                    return [
-                        {v: i+1, s: cellStyle},
-                        {v: st.name || "بدون اسم", s: cellStyle},
-                        {v: st.studentId || "-", s: cellStyle},
-                        {v: st.section || "-", s: cellStyle},
-                        {v: st.submissionTime || "-", s: cellStyle},
-                        {v: st.timeTaken || "-", s: cellStyle},
-                        {v: score, s: {...cellStyle, font: {color: {rgb: "008000"}}, numFmt: "0"}},
-                        {v: wrong, s: {...cellStyle, font: {color: {rgb: "FF0000"}}, numFmt: "0"}},
-                        {v: score, s: {...cellStyle, font: {bold: true}, numFmt: "0"}},
-                        {v: total, s: cellStyle, numFmt: "0"},
-                        {v: st.level || "-", s: cellStyle},
-                        {v: missedText, s: {...cellStyle, alignment: {horizontal: "right", wrapText: true}}}
-                    ];
-                });
-                let footerRows = [
-                    [], [],
-                    [
-                        {v: "معد التقارير: لجنة التميز", s: {font: {bold: true}, alignment: {horizontal: "center"}}},
-                        null, null, null, null, null, null, null,
-                        {v: "مدير المدرسة: أحمد سالم الشهري", s: {font: {bold: true}, alignment: {horizontal: "center"}}}
-                    ]
-                ];
-                
+                let headers = [[{v: "المملكة العربية السعودية", s: {font: {bold: true}, alignment: {horizontal: "center"}}}], [{v: "وزارة التعليم", s: {font: {bold: true}, alignment: {horizontal: "center"}}}], [{v: "الإدارة العامة للتعليم بمنطقة عسير", s: {font: {bold: true}, alignment: {horizontal: "center"}}}], [{v: "ابتدائية ومتوسطة الراشدون بالمربع", s: {font: {bold: true, color: {rgb: "006266"}}, alignment: {horizontal: "center"}}}], [], [{v: printData.title + " - " + printData.subtitle, s: {font: {bold: true, sz: 14}, alignment: {horizontal: "center"}, fill: {fgColor: {rgb: "EEEEEE"}}}}], []];
+                let tableHead = [], dataRows = [], colWidths = [];
+                if(printData.type === 'missing') {
+                    tableHead = [{v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "الحالة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}];
+                    dataRows = printData.content.map((st, i) => { let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}}; return [{v: i+1, s: cellStyle}, {v: st.name, s: cellStyle}, {v: st.id, s: cellStyle}, {v: st.section, s: cellStyle}, {v: "لم يختبر", s: {...cellStyle, font: {color: {rgb: "C0392B"}, bold:true}}}]; });
+                    colWidths = [{wch: 5}, {wch: 30}, {wch: 15}, {wch: 10}, {wch: 15}];
+                } else {
+                    tableHead = [{v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "وقت التسليم", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الوقت المستغرق", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "صحيحة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "خاطئة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الدرجة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الدرجة الكلية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "المستوى", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "المهارات المفقودة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}];
+                    dataRows = printData.content.map((st, i) => { let score = parseInt(st.score) || 0; let total = parseInt(st.total) || 0; let wrong = total - score; let missedText = Array.isArray(st.missed) ? st.missed.join(" - ") : String(st.missed||""); let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}}; return [{v: i+1, s: cellStyle}, {v: st.name || "بدون اسم", s: cellStyle}, {v: st.studentId || "-", s: cellStyle}, {v: st.section || "-", s: cellStyle}, {v: st.submissionTime || "-", s: cellStyle}, {v: st.timeTaken || "-", s: cellStyle}, {v: score, s: {...cellStyle, font: {color: {rgb: "008000"}}, numFmt: "0"}}, {v: wrong, s: {...cellStyle, font: {color: {rgb: "FF0000"}}, numFmt: "0"}}, {v: score, s: {...cellStyle, font: {bold: true}, numFmt: "0"}}, {v: total, s: cellStyle, numFmt: "0"}, {v: st.level || "-", s: cellStyle}, {v: missedText, s: {...cellStyle, alignment: {horizontal: "right", wrapText: true}}}]; });
+                    colWidths = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 8}, {wch: 12}, {wch: 12}, {wch: 8}, {wch: 8}, {wch: 8}, {wch: 10}, {wch: 12}, {wch: 40}];
+                }
+                let footerRows = [[], [], [{v: "معد التقارير: لجنة التميز", s: {font: {bold: true}, alignment: {horizontal: "center"}}}, null, null, null, null, null, null, null, {v: "مدير المدرسة: أحمد سالم الشهري", s: {font: {bold: true}, alignment: {horizontal: "center"}}} ]];
                 let finalData = [...headers, tableHead, ...dataRows, ...footerRows];
                 let ws = XLSX.utils.aoa_to_sheet(finalData);
-                ws['!cols'] = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 8}, {wch: 12}, {wch: 12}, {wch: 8}, {wch: 8}, {wch: 8}, {wch: 10}, {wch: 12}, {wch: 40}];
-                ws['!merges'] = [
-                    {s: {r:0, c:0}, e: {r:0, c:8}}, {s: {r:1, c:0}, e: {r:1, c:8}}, {s: {r:2, c:0}, e: {r:2, c:8}}, {s: {r:3, c:0}, e: {r:3, c:8}}, {s: {r:5, c:0}, e: {r:5, c:8}},
-                    {s: {r: finalData.length-1, c: 0}, e: {r: finalData.length-1, c: 2}}, 
-                    {s: {r: finalData.length-1, c: 8}, e: {r: finalData.length-1, c: 10}}
-                ];
+                ws['!cols'] = colWidths;
+                ws['!merges'] = [{s: {r:0, c:0}, e: {r:0, c:4}}, {s: {r:1, c:0}, e: {r:1, c:4}}, {s: {r:2, c:0}, e: {r:2, c:4}}, {s: {r:3, c:0}, e: {r:3, c:4}}, {s: {r:5, c:0}, e: {r:5, c:4}}, {s: {r: finalData.length-1, c: 0}, e: {r: finalData.length-1, c: 2}}];
                 XLSX.utils.book_append_sheet(wb, ws, "التقرير");
                 XLSX.writeFile(wb, `تقرير_${printData.subtitle.replace(/ /g,'_')}.xlsx`);
                 document.getElementById('loading-overlay').style.display = 'none'; 
-            } catch(e) { 
-                document.getElementById('loading-overlay').style.display = 'none';
-                alert("حدث خطأ أثناء التصدير: " + e.message); console.error(e); 
-            }
+            } catch(e) { document.getElementById('loading-overlay').style.display = 'none'; alert("حدث خطأ أثناء التصدير: " + e.message); console.error(e); }
         }
         
-        function goToSubjects() { 
+function goToSubjects() { 
             state.name = document.getElementById('sName').value; 
             state.id = document.getElementById('sID').value; 
             state.grade = document.getElementById('sGrade').value; 
             state.section = document.getElementById('sSection').value; 
+            
             if(!state.name || !state.grade || !state.id) { alert("الرجاء إكمال جميع البيانات المطلوبة"); return; }
             if(state.id.length < 10) { alert("⚠️ خطأ: رقم الهوية يجب أن يتكون من 10 أرقام أو أكثر."); return; }
+            
+            // إخفاء العلوم لثالث ابتدائي
+            let sciCard = document.getElementById('card-sci');
+            if (state.grade === '3') {
+                sciCard.style.display = 'none';
+            } else {
+                sciCard.style.display = '';
+            }
+
+            activeWeek = activeWeeksMap[state.grade] || 1; 
+            if(document.getElementById('subject-week-badge')) document.getElementById('subject-week-badge').innerText = "📅 أسبوع " + activeWeek;
             nav('section-subjects');
             checkSubjectStatus();
-        }
-
-        function checkSubjectStatus() {
+        }        function checkSubjectStatus() {
             ['math', 'sci', 'read'].forEach(sub => {
                 let card = document.getElementById('card-' + sub);
-                card.style.borderColor = "transparent";
-                card.style.background = "#fff";
+                card.style.borderColor = "transparent"; card.style.background = "#fff";
                 card.querySelector('.status-indicator').innerHTML = '';
             });
             if (!isOnline || !db || !state.id) return;
@@ -1178,11 +1240,7 @@
                 let takenSubjects = [];
                 if (snap.exists()) {
                     let val = snap.val();
-                    Object.values(val).forEach(r => {
-                        if (r.week == activeWeek) {
-                            takenSubjects.push(r.subject);
-                        }
-                    });
+                    Object.values(val).forEach(r => { if (r.week == activeWeek) { takenSubjects.push(r.subject); } });
                 }
                 updateSubjectCardsUI(takenSubjects);
             });
@@ -1194,8 +1252,7 @@
                 let card = document.getElementById('card-' + sub);
                 let statusDiv = card.querySelector('.status-indicator');
                 if (takenList.includes(sub)) {
-                    card.style.border = "2px solid #27ae60";
-                    card.style.background = "#e8f8f5";
+                    card.style.border = "2px solid #27ae60"; card.style.background = "#e8f8f5";
                     statusDiv.innerHTML = '<span style="color:#27ae60; font-weight:bold; font-size:0.9rem;">✅ تم الاختبار</span>';
                 } else {
                     card.style.border = "2px solid #c0392b";
@@ -1217,18 +1274,13 @@
                           let results = Object.values(snap.val());
                           if(results.find(r => r.subject == state.subject && r.model == m && r.grade == state.grade && r.week == activeWeek)) taken = true;
                       }
-                      if(taken) {
-                          document.getElementById('loading-overlay').style.display='none';
-                          alert("لقد اختبرت هذا النموذج لهذا الأسبوع سابقاً");
-                          return; 
-                      }
+                      if(taken) { document.getElementById('loading-overlay').style.display='none'; alert("لقد اختبرت هذا النموذج لهذا الأسبوع سابقاً"); return; }
                       db.ref(`questions/${state.subject}/g${state.grade}/w${activeWeek}/t${m}`).once('value').then(s=>{ 
                           document.getElementById('loading-overlay').style.display='none'; 
                           activeQuestions = s.val()||[]; 
                           if(!activeQuestions.length) alert("لا توجد أسئلة متاحة لهذا الأسبوع (" + activeWeek + ")"); 
                           else { 
-                              renderQuiz(); 
-                              nav('section-quiz');
+                              renderQuiz(); nav('section-quiz');
                               if(isTimerEnabled) { startTimer(timerDuration); } else { document.getElementById('exam-timer').style.display = 'none'; if(examTimer) clearInterval(examTimer); }
                               examStartTime = Date.now(); 
                           } 
@@ -1240,23 +1292,16 @@
         function startTimer(minutes) {
             timeLeft = minutes * 60;
             const timerEl = document.getElementById('exam-timer');
-            timerEl.style.display = 'flex'; 
-            updateTimerDisplay(); 
+            timerEl.style.display = 'flex'; updateTimerDisplay(); 
             if(examTimer) clearInterval(examTimer); 
             examTimer = setInterval(() => {
-                timeLeft--;
-                updateTimerDisplay();
-                if(timeLeft <= 0) {
-                    clearInterval(examTimer);
-                    alert("⏳ انتهى الوقت! سيتم اعتماد إجابتك الحالية.");
-                    submitAnswers(); 
-                }
+                timeLeft--; updateTimerDisplay();
+                if(timeLeft <= 0) { clearInterval(examTimer); alert("⏳ انتهى الوقت! سيتم اعتماد إجابتك الحالية."); submitAnswers(); }
             }, 1000);
         }
 
         function updateTimerDisplay() {
-            const m = Math.floor(timeLeft / 60);
-            const s = timeLeft % 60;
+            const m = Math.floor(timeLeft / 60); const s = timeLeft % 60;
             document.getElementById('timer-display').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
             const timerEl = document.getElementById('exam-timer');
             if(timeLeft < 60) { timerEl.style.background = '#f1c40f'; timerEl.style.color = '#000'; } else { timerEl.style.background = '#c0392b'; timerEl.style.color = '#fff'; }
@@ -1265,8 +1310,7 @@
         function renderQuiz() { 
             let h = ""; 
             activeQuestions.forEach((q,i)=>{ 
-                let cleanQ = sanitizeHTML(q.t);
-                let qText = formatMath(smartFixMath(cleanQ));
+                let cleanQ = sanitizeHTML(q.t); let qText = formatMath(smartFixMath(cleanQ));
                 let qOpts = q.o.map(opt => formatMath(smartFixMath(sanitizeHTML(opt))));
                 h += `<div class="question-box" id="q-box-${i}"><div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div id="opts-${i}">${qOpts.map((o,x)=>`<label class="option-label" id="lbl-${i}-${x}"><input type="radio" name="q${i}" value="${x}"> ${o}</label>`).join('')}</div><div id="fb-${i}" style="display:none;margin-top:10px;padding:10px;border-radius:5px;font-weight:bold;"></div></div>`; 
             }); 
@@ -1274,25 +1318,21 @@
             document.getElementById('result-area').style.display='none'; 
             document.getElementById('btn-submit').style.display='block'; 
             document.getElementById('quizHeader').innerText = `${subMap[state.subject]} - ${modelMap[state.model]} (أسبوع ${activeWeek})`; 
-            setTimeout(forceMathRender, 500); 
+            setTimeout(() => { if(window.MathJax) MathJax.typesetPromise(); }, 500); 
         }
         
         function submitAnswers() { 
             if(examTimer) { clearInterval(examTimer); document.getElementById('exam-timer').style.display = 'none'; }
-            let s = 0, m = [], mastered = [];
-            let studentAnswers = []; 
+            let s = 0, m = [], mastered = []; let studentAnswers = []; 
             let durationSec = Math.floor((Date.now() - examStartTime) / 1000);
             let durationStr = `${Math.floor(durationSec/60)}:${(durationSec%60).toString().padStart(2,'0')}`;
             let submissionTimeStr = new Date().toLocaleTimeString('ar-SA', {hour: '2-digit', minute:'2-digit'});
-
             activeQuestions.forEach((q,i)=>{ 
                 let sel = document.querySelector(`input[name="q${i}"]:checked`); 
-                let box = document.getElementById(`q-box-${i}`);
-                let fb = document.getElementById(`fb-${i}`);
+                let box = document.getElementById(`q-box-${i}`); let fb = document.getElementById(`fb-${i}`);
                 document.getElementsByName(`q${i}`).forEach(o => o.disabled=true);
                 let selectedIndex = sel ? parseInt(sel.value) : -1;
                 studentAnswers.push(selectedIndex);
-
                 if(selectedIndex == q.a) { 
                     s++; box.style.border="2px solid #27ae60"; box.style.backgroundColor="#e8f8f5"; 
                     fb.style.display="block"; fb.style.color="#27ae60"; fb.innerHTML="✅ إجابة صحيحة";
@@ -1304,8 +1344,7 @@
                     let corr = document.getElementById(`lbl-${i}-${q.a}`); 
                     if(corr) { corr.style.backgroundColor="#27ae60"; corr.style.color="#fff"; corr.innerHTML += ' <i class="fas fa-check-circle" style="float:left"></i>'; }
                     let expHTML = (q.e && q.e.trim()) ? `<div style="background:#fff3cd;color:#856404;padding:8px;margin-top:5px;border-radius:5px;border:1px solid #ffeeba;">💡 <b>طريقة الحل:</b><br>${formatMath(smartFixMath(q.e))}</div>` : "";
-                    let cleanText = formatMath(smartFixMath(sanitizeHTML(q.o[q.a])));
-                    fb.innerHTML = `❌ إجابة خاطئة! الإجابة الصحيحة: <b>${cleanText}</b>${expHTML}`;
+                    fb.innerHTML = `❌ إجابة خاطئة! الإجابة الصحيحة: <b>${formatMath(smartFixMath(sanitizeHTML(q.o[q.a])))}</b>${expHTML}`;
                 }
             }); 
             let per = Math.round(s/activeQuestions.length*100); 
@@ -1316,14 +1355,13 @@
             document.getElementById('result-area').scrollIntoView({behavior:"smooth"});
             document.getElementById('btn-submit').style.display='none'; 
             document.getElementById('btn-back').style.display='block';
-            setTimeout(forceMathRender, 500); 
+            setTimeout(() => { if(window.MathJax) MathJax.typesetPromise(); }, 500); 
             if(isOnline && db) { 
                 db.ref('exam_results').push({ 
                     name:state.name, studentId:state.id, grade:state.grade, section:state.section, 
                     subject:state.subject, model:state.model, week:activeWeek, 
                     score:s, total:activeQuestions.length, level:lvl, 
-                    missed:m, mastered: mastered, 
-                    studentAnswers: studentAnswers,
+                    missed:m, mastered: mastered, studentAnswers: studentAnswers,
                     timeTaken: durationStr, submissionTime: submissionTimeStr, timestamp:Date.now() 
                 }); 
             }
@@ -1338,7 +1376,6 @@
                     let rawData = s.val() || {};
                     let d = Object.keys(rawData).map(key => ({...rawData[key], key: key}));
                     d.sort((a,b) => b.timestamp - a.timestamp); 
-                    
                     if (d.length > 0) {
                         let latestWeek = d[0].week;
                         let subjectScores = { 'math': 0, 'sci': 0, 'read': 0 };
@@ -1347,52 +1384,23 @@
                         let mathPct = Math.round((subjectScores['math'] / subjectTotals['math']) * 100);
                         let sciPct = Math.round((subjectScores['sci'] / subjectTotals['sci']) * 100);
                         let readPct = Math.round((subjectScores['read'] / subjectTotals['read']) * 100);
-
                         let ctx = document.getElementById('studentWeeklyChart').getContext('2d');
                         if (studentChartInstance) studentChartInstance.destroy();
-
                         studentChartInstance = new Chart(ctx, {
                             type: 'bar',
                             data: {
                                 labels: ['الرياضيات', 'العلوم', 'لغتي'],
-                                datasets: [{
-                                    label: `نسبة الإتقان (أسبوع ${latestWeek})`,
-                                    data: [mathPct, sciPct, readPct],
-                                    backgroundColor: ['rgba(46, 204, 113, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)'],
-                                    borderColor: ['#27ae60', '#2980b9', '#8e44ad'],
-                                    borderWidth: 2
-                                }]
+                                datasets: [{ label: `نسبة الإتقان (أسبوع ${latestWeek})`, data: [mathPct, sciPct, readPct], backgroundColor: ['rgba(46, 204, 113, 0.7)', 'rgba(52, 152, 219, 0.7)', 'rgba(155, 89, 182, 0.7)'], borderColor: ['#27ae60', '#2980b9', '#8e44ad'], borderWidth: 2 }]
                             },
-                            options: {
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                scales: { y: { beginAtZero: true, max: 100, title: {display: true, text: 'النسبة المئوية %'} } },
-                                plugins: { legend: { display: false }, title: { display: true, text: `مستوى التقدم للأسبوع ${latestWeek} 📊`, font: {size: 16} } }
-                            }
+                            options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, max: 100, title: {display: true, text: 'النسبة المئوية %'} } }, plugins: { legend: { display: false }, title: { display: true, text: `مستوى التقدم للأسبوع ${latestWeek} 📊`, font: {size: 16} } } }
                         });
                     }
-
                     let h=""; 
                     d.forEach(r=>{ 
                         let scoreColor = r.score >= (r.total/2) ? '#27ae60' : '#c0392b';
-                        let missedHtml = "";
-                        if(r.missed && r.missed.length > 0) {
-                            missedHtml = `<div class="pc-skills-sec"><h5 style="color:#c62828">⚠️ مهارات تحتاج تحسين:</h5><div>${r.missed.map(m => `<span class="skill-tag st-missed">${m}</span>`).join('')}</div></div>`;
-                        }
-                        let masteredHtml = "";
-                        if(r.mastered && r.mastered.length > 0) {
-                            masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div>${r.mastered.map(m => `<span class="skill-tag st-mastered">${m}</span>`).join('')}</div></div>`;
-                        } else if (!r.missed || r.missed.length === 0) {
-                             masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">باقي مهارات الاختبار</span></div></div>`;
-                        } else {
-                             masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">باقي مهارات الاختبار</span></div></div>`;
-                        }
-                        let reviewBtn = "";
-                        if(r.studentAnswers) {
-                            reviewBtn = `<button class="btn btn-primary" style="width:100%; margin-top:10px; font-size:0.9rem;" onclick="reviewExam('${r.key}')"><i class="fas fa-eye"></i> عرض ورقة الإجابة والتغذية الراجعة</button>`;
-                        } else {
-                            reviewBtn = `<div style="text-align:center; color:#999; margin-top:10px; font-size:0.8rem;">(لا تتوفر تفاصيل لهذا الاختبار القديم)</div>`;
-                        }
+                        let missedHtml = (r.missed && r.missed.length > 0) ? `<div class="pc-skills-sec"><h5 style="color:#c62828">⚠️ مهارات تحتاج تحسين:</h5><div>${r.missed.map(m => `<span class="skill-tag st-missed">${m}</span>`).join('')}</div></div>` : "";
+                        let masteredHtml = `<div class="pc-skills-sec"><h5 style="color:#2e7d32">✅ مهارات متقنة:</h5><div><span class="skill-tag st-mastered">باقي مهارات الاختبار</span></div></div>`;
+                        let reviewBtn = r.studentAnswers ? `<button class="btn btn-primary" style="width:100%; margin-top:10px; font-size:0.9rem;" onclick="reviewExam('${r.key}')"><i class="fas fa-eye"></i> عرض ورقة الإجابة والتغذية الراجعة</button>` : `<div style="text-align:center; color:#999; margin-top:10px; font-size:0.8rem;">(لا تتوفر تفاصيل لهذا الاختبار القديم)</div>`;
                         h+=`<div class="profile-card"><div class="pc-header"><h4>${subMap[r.subject]} <small>(${modelMap[r.model]})</small></h4><span>أسبوع ${r.week||'-'}</span></div><div class="pc-body"><div class="pc-score-row"><div class="pc-score-circle" style="background:${scoreColor}">${toAr(r.score)}</div><div><div style="font-weight:bold; font-size:1.1rem;">${r.level}</div><div style="color:#777; font-size:0.9rem;">الدرجة: ${toAr(r.score)} من ${toAr(r.total)}</div></div></div>${missedHtml}${masteredHtml}${reviewBtn}</div></div>`; 
                     }); 
                     document.getElementById('student-history-table').innerHTML = h||"<div style='text-align:center; padding:20px;'>لا توجد سجلات سابقة</div>"; 
@@ -1414,40 +1422,224 @@
                     let h = "";
                     let answers = result.studentAnswers || [];
                     questions.forEach((q, i) => {
-                        let cleanQ = sanitizeHTML(q.t);
-                        let qText = formatMath(smartFixMath(cleanQ));
+                        let cleanQ = sanitizeHTML(q.t); let qText = formatMath(smartFixMath(cleanQ));
                         let userAnsIndex = answers[i] !== undefined ? answers[i] : -1;
                         let isCorrect = (userAnsIndex === q.a);
-                        let boxStyle = "";
-                        let feedback = "";
-                        if(isCorrect) {
-                            boxStyle = "border:2px solid #27ae60; background-color:#e8f8f5;";
-                            feedback = `<div style="margin-top:10px; color:#27ae60; font-weight:bold;">✅ إجابتك صحيحة</div>`;
-                        } else {
-                            boxStyle = "border:2px solid #c0392b; background-color:#fdedec;";
-                            let cleanCorrect = formatMath(smartFixMath(sanitizeHTML(q.o[q.a])));
-                            let expHTML = (q.e && q.e.trim()) ? `<div style="background:#fff3cd;color:#856404;padding:8px;margin-top:5px;border-radius:5px;border:1px solid #ffeeba;">💡 <b>التبرير/الطريقة:</b><br>${formatMath(smartFixMath(q.e))}</div>` : "";
-                            feedback = `<div style="margin-top:10px; color:#c0392b; font-weight:bold;">❌ إجابتك خاطئة. الإجابة الصحيحة: ${cleanCorrect}</div>${expHTML}`;
-                        }
+                        let boxStyle = isCorrect ? "border:2px solid #27ae60; background-color:#e8f8f5;" : "border:2px solid #c0392b; background-color:#fdedec;";
+                        let feedback = isCorrect ? `<div style="margin-top:10px; color:#27ae60; font-weight:bold;">✅ إجابتك صحيحة</div>` : `<div style="margin-top:10px; color:#c0392b; font-weight:bold;">❌ إجابتك خاطئة. الإجابة الصحيحة: ${formatMath(smartFixMath(sanitizeHTML(q.o[q.a])))}</div>${(q.e && q.e.trim()) ? `<div style="background:#fff3cd;color:#856404;padding:8px;margin-top:5px;border-radius:5px;border:1px solid #ffeeba;">💡 <b>التبرير:</b><br>${formatMath(smartFixMath(q.e))}</div>` : ""}`;
                         let qOpts = q.o.map((opt, x) => {
                             let optTxt = formatMath(smartFixMath(sanitizeHTML(opt)));
-                            let checked = (x === userAnsIndex) ? "checked" : "";
-                            let labelStyle = "";
-                            if (x === q.a) labelStyle = "background-color:#27ae60; color:#fff;"; 
-                            else if (x === userAnsIndex && !isCorrect) labelStyle = "background-color:#e74c3c; color:#fff;"; 
-                            return `<label class="option-label" style="pointer-events:none; ${labelStyle}"><input type="radio" disabled ${checked}> ${optTxt}</label>`;
+                            let labelStyle = (x === q.a) ? "background-color:#27ae60; color:#fff;" : (x === userAnsIndex && !isCorrect ? "background-color:#e74c3c; color:#fff;" : ""); 
+                            return `<label class="option-label" style="pointer-events:none; ${labelStyle}"><input type="radio" disabled ${x===userAnsIndex?'checked':''}> ${optTxt}</label>`;
                         }).join('');
                         h += `<div class="question-box" style="${boxStyle}"><div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div>${qOpts}</div>${feedback}</div>`;
                     });
                     document.getElementById('review-subtitle').innerText = `${subMap[result.subject]} - الأسبوع ${result.week}`;
                     document.getElementById('review-container').innerHTML = h;
                     nav('section-review');
-                    setTimeout(forceMathRender, 500);
+                    setTimeout(() => { if(window.MathJax) MathJax.typesetPromise(); }, 500);
                 });
             });
         }
-        function forceMathRender() { if(window.MathJax) MathJax.typesetPromise(); }
-        renderList();
+        
+async function executeArchiving() {
+            if (tempQuestionList.length === 0) return alert("لا توجد أسئلة في القائمة للأرشفة!");
+
+            const dest = document.getElementById('archive-dest').value;
+            const modelType = document.getElementById('archive-model-type').value; 
+            const nameInput = document.getElementById('archive-name').value;
+            const statusEl = document.getElementById('archive-status');
+            const btn = document.getElementById('btn-archive');
+            const isTeacher = (modelType === 'teacher');
+
+            let subjectName = subMap[document.getElementById('q-subject').value] || "مادة";
+            let weekNum = document.getElementById('q-week').value || "0";
+            let gradeVal = document.getElementById('q-grade').value;
+            let fileName = nameInput ? nameInput : `اختبار_${subjectName}_أسبوع_${weekNum}_${isTeacher ? 'معلم' : 'طالب'}`;
+            if (!fileName.endsWith('.pdf')) fileName += '.pdf';
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
+            statusEl.innerHTML = '<span style="color:blue">جاري تجهيز التصميم المطابق للمنصة...</span>';
+
+            // 1. إنشاء الحاوية الخارجية (Overlay)
+            // نستخدم هذا الغطاء لضمان أن عملية التصوير تتم على خلفية بيضاء ونظيفة
+            const element = document.createElement('div');
+            element.style.position = 'fixed'; 
+            element.style.top = '0';
+            element.style.left = '0';
+            element.style.width = '100%';
+            element.style.height = '100%'; 
+            element.style.zIndex = '999999'; 
+            element.style.background = '#ffffff'; 
+            element.style.overflowY = 'scroll'; // السماح بالتمرير للمحتوى الطويل
+            element.style.padding = '0'; 
+            
+            // 2. تصميم الورقة (Paper)
+            const paper = document.createElement('div');
+            paper.style.width = '794px'; // عرض A4 القياسي
+            paper.style.minHeight = '1123px'; 
+            paper.style.margin = '0 auto'; 
+            paper.style.background = '#ffffff';
+            paper.style.position = 'relative';
+            paper.style.direction = 'rtl';
+            paper.style.fontFamily = "'Tajawal', 'Amiri', sans-serif"; 
+            paper.style.color = '#000';
+            paper.style.padding = '40px 50px'; // هوامش الورقة
+            paper.style.boxSizing = 'border-box'; 
+            
+            // === إصلاح العلامة المائية ===
+            // جعلناها أغمق (0.08) ومتكررة لتشبه خلفية المنصة
+            paper.style.backgroundImage = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='200px' width='200px'><text transform='translate(20, 100) rotate(-30)' fill='rgba(0,0,0,0.08)' font-size='20' font-family='Tajawal' font-weight='bold'>مدرسة الراشدون</text></svg>\")";
+            paper.style.backgroundRepeat = "repeat"; // تكرار العلامة المائية
+
+            let logoRight = cachedLogos.ministry || ""; 
+            let logoLeft = cachedLogos.vision || "";
+
+            // === الترويسة (Header) ===
+            let headerHtml = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 2px double #000; padding-bottom: 15px;">
+                <div style="width: 100px; height: 80px; display:flex; align-items:center; justify-content:center;">
+                    ${logoRight ? `<img src="${logoRight}" style="max-width:100%; max-height:100%;">` : ''}
+                </div>
+                <div style="text-align: center; flex: 1;">
+                    <div style="font-size:12px; margin-bottom:3px;">المملكة العربية السعودية</div>
+                    <div style="font-size:12px; margin-bottom:3px;">وزارة التعليم</div>
+                    <div style="font-size:12px; margin-bottom:3px;">الإدارة العامة للتعليم بمنطقة عسير</div>
+                    <div style="font-size:16px; font-weight:800; margin: 8px 0; font-family:'Amiri', serif;">ابتدائية ومتوسطة الراشدون بالمربع</div>
+                    <div style="border: 1px solid #000; padding: 5px 20px; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 14px; margin-top: 5px; background:#f9f9f9;">
+                        اختبار نافس (${isTeacher ? 'نموذج الإجابة' : 'نسخة الطالب'})
+                    </div>
+                </div>
+                <div style="width: 100px; height: 80px; display:flex; align-items:center; justify-content:center;">
+                    ${logoLeft ? `<img src="${logoLeft}" style="max-width:100%; max-height:100%;">` : ''}
+                </div>
+            </div>
+            
+            <div style="border: 2px solid #000; padding: 8px 10px; margin-bottom: 30px; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; background-color: #fff;">
+                <div style="flex:1;">المادة: ${subjectName}</div>
+                <div style="flex:1; text-align:center;">الصف: ${gradeMap[gradeVal] || ''}</div>
+                <div style="flex:1; text-align:left;">الاسم: ...........................................</div>
+            </div>`;
+
+            // === محتوى الأسئلة ===
+            let contentHtml = tempQuestionList.map((q, i) => {
+                let qText = formatMath(smartFixMath(q.t));
+                let num = toAr(i + 1);
+                
+                // === إصلاح الخيارات (Grid Layout) ===
+                // استخدام CSS Grid لضمان ظهور الخيارات بجانب بعضها (عمودين) مهما كان حجم الشاشة
+                let optionsHtml = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: 10px;">`;
+                
+                q.o.forEach((opt, idx) => {
+                    let optText = formatMath(smartFixMath(opt));
+                    let label = ['(أ)', '(ب)', '(ج)', '(د)'][idx];
+                    
+                    // تنسيق الصندوق (Box) كما في المنصة
+                    let boxStyle = "border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; background: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 14px; min-height: 38px;";
+                    let checkMark = "";
+
+                    // تلوين الإجابة للمعلم
+                    if (isTeacher && idx === q.a) { 
+                        boxStyle = "border: 2px solid #27ae60; border-radius: 6px; padding: 8px 12px; background: #e8f8f5; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight:bold; min-height: 38px;";
+                        checkMark = `<span style="color:#27ae60; font-size:16px; margin-right:5px;">✔</span>`;
+                    }
+
+                    // ترتيب العناصر داخل الصندوق: النص يمين، الرمز (أ) يسار
+                    optionsHtml += `
+                        <div style="${boxStyle}">
+                            <div style="flex:1; text-align:right;">${optText} ${checkMark}</div>
+                            <div style="font-weight:bold; color:#555; font-family:'Tajawal';">${label}</div>
+                        </div>
+                    `;
+                });
+                optionsHtml += `</div>`; // إغلاق div الشبكة
+
+                // المؤشر
+                let indicatorHtml = q.s ? `<div style="margin-top: 8px; font-size: 11px; color: #666; border-top:1px dotted #ccc; padding-top:4px;">📂 المؤشر: ${q.s}</div>` : '';
+
+                // تجميع السؤال
+                return `
+                <div style="margin-bottom: 25px; border-bottom: 1px dashed #999; padding-bottom: 20px; page-break-inside: avoid;">
+                    <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
+                        <div style="border: 2px solid #000; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-left: 12px; font-size: 15px; flex-shrink:0; background:#f5f5f5;">${num}</div>
+                        <div style="font-size: 16px; font-weight: bold; line-height: 1.6; padding-top: 3px; width:100%; text-align:justify;">${qText}</div>
+                    </div>
+                    <div style="padding-right: 45px;">
+                        ${optionsHtml}
+                        ${isTeacher ? indicatorHtml : ''}
+                    </div>
+                </div>`;
+            }).join('');
+
+            let footerHtml = `
+            <div style="margin-top: 50px; border-top: 3px double #000; padding-top: 15px; display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
+                <div>✍️ إعداد: لجنة التميز</div>
+                <div>مدير المدرسة: أ. أحمد سالم الشهري</div>
+            </div>`;
+
+            paper.innerHTML = headerHtml + contentHtml + footerHtml;
+            element.appendChild(paper);
+            document.body.appendChild(element);
+
+            // 3. التمرير للأعلى ومعالجة الرياضيات (MathJax)
+            window.scrollTo(0,0);
+            if (window.MathJax) { await MathJax.typesetPromise([element]); }
+
+            // 4. مهلة زمنية إجبارية لضمان اكتمال الرسم (مهمة جداً)
+            await new Promise(r => setTimeout(r, 1500));
+
+            try {
+                const opt = {
+                    margin: [0.2, 0.2, 0.2, 0.2], 
+                    filename: fileName,
+                    image: { type: 'jpeg', quality: 0.99 }, // جودة عالية
+                    html2canvas: { 
+                        scale: 2, 
+                        useCORS: true, 
+                        scrollY: 0,
+                    },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+
+                if (dest === 'local') {
+                    await html2pdf().set(opt).from(paper).save();
+                    statusEl.innerHTML = '<span style="color:green">✅ تم حفظ الملف في جهازك</span>';
+                } else {
+                    statusEl.innerHTML = '<span style="color:blue">جاري الرفع لسحابة قوقل...</span>';
+                    const pdfBlob = await html2pdf().set(opt).from(paper).outputPdf('blob');
+                    const reader = new FileReader();
+                    reader.readAsDataURL(pdfBlob); 
+                    reader.onloadend = async function() {
+                        const base64data = reader.result.split(',')[1];
+                        const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyahJle4Bhe41Txha30KMJccu8oXJJCj2UkVgW-cn4toPQKFlIYVhLvtR8OLnqSy5Ix/exec";
+                        let subFolderName = `اختبارات_${subMap[document.getElementById('q-subject').value]}`;
+                        const response = await fetch(SCRIPT_URL, { 
+                            method: 'POST', 
+                            body: JSON.stringify({ 
+                                type: "tests", 
+                                subFolderName: subFolderName, 
+                                fileName: fileName, 
+                                fileData: base64data 
+                            }) 
+                        });
+                        const result = await response.json();
+                        if (result.status === 'success') { 
+                            statusEl.innerHTML = `✅ تم الحفظ! <a href="${result.fileUrl}" target="_blank" style="text-decoration:underline; color:blue;">رابط الملف</a>`; 
+                        } else { 
+                            statusEl.innerHTML = `<span style="color:red">❌ خطأ من السكربت: ${result.message}</span>`; 
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error(err);
+                statusEl.innerHTML = '<span style="color:red">حدث خطأ أثناء المعالجة!</span>';
+            } finally {
+                if (document.body.contains(element)) document.body.removeChild(element);
+                btn.disabled = false;
+                btn.innerHTML = '🚀 تنفيذ الأرشفة';
+            }
+        } renderList();
     </script>
 </body>
 </html>
