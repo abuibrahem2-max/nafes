@@ -81,6 +81,7 @@
         .btn-danger { background: #c0392b; color: white; }
         .btn-success { background: #27ae60; color: white; }
         .btn-warning { background: #f39c12; color: white; }
+        .btn-locked { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
         .form-control { width: 100%; padding: 12px; border: 2px solid #eef2f7; border-radius: 10px; font-family: var(--font); margin-bottom: 15px; background: #fdfdfd; font-size: 1rem; transition: 0.3s; }
         .form-control:focus { border-color: var(--primary); background: #fff; }
         .grid-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
@@ -394,8 +395,7 @@
                 <div id="student-history-table"></div> <button class="btn btn-secondary" style="width:100%; margin-top:20px;" onclick="nav('section-home')">عودة</button>
             </div>
         </div>
-
-        <div id="section-admin" class="section">
+<div id="section-admin" class="section">
             <div class="card-container" style="max-width:1200px;">
                 <h2 style="color:var(--secondary); text-align:center; margin-bottom:20px;">لوحة المعلم</h2>
                 
@@ -708,6 +708,26 @@
                                 </div>
                             </div>
                         </div>
+                        
+                        <div style="margin-bottom:20px; padding:15px; background:#e8f6f3; border:1px solid #1abc9c; border-radius:10px;">
+                            <h4 style="color:#16a085; margin-top:0;">📅 جدولة فتح الاختبارات (القفل التلقائي):</h4>
+                            <p style="font-size:0.85rem; color:#555;">لن تظهر الاختبارات للطلاب إلا بعد التاريخ والوقت المحدد أدناه. (اتركه فارغاً للفتح المباشر).</p>
+                            
+                            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:bold;">3 ابتدائي</label>
+                                    <input type="datetime-local" id="time-start-3" class="form-control" style="direction:ltr; font-size:0.8rem;" onchange="saveStartTime('3', this.value)">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:bold;">6 ابتدائي</label>
+                                    <input type="datetime-local" id="time-start-6" class="form-control" style="direction:ltr; font-size:0.8rem;" onchange="saveStartTime('6', this.value)">
+                                </div>
+                                <div>
+                                    <label style="font-size:0.8rem; font-weight:bold;">3 متوسط</label>
+                                    <input type="datetime-local" id="time-start-9" class="form-control" style="direction:ltr; font-size:0.8rem;" onchange="saveStartTime('9', this.value)">
+                                </div>
+                            </div>
+                        </div>
                         <div style="padding:15px; background:#fff0f0; border-radius:10px; border:1px solid #e74c3c; margin-bottom:15px;">
                             <h4 style="color:#c0392b; margin-top:0;">⏱️ إعدادات مؤقت الاختبار:</h4>
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
@@ -736,8 +756,7 @@
             </div>
         </div>
     </div>
-    
-    <div id="printableArea">
+<div id="printableArea">
         <div class="print-header">
             <img id="print-logo-right" class="print-logo">
             <div class="print-title" style="text-align:center;">
@@ -802,6 +821,10 @@
             <table class="simple-table" id="formal-answers-table"></table>
         </div>
     </div>
+    
+    <span id="btn-m2-state" style="display:none;" class="btn btn-locked" data-disabled="true"></span>
+    <span id="btn-m3-state" style="display:none;" class="btn btn-locked" data-disabled="true"></span>
+
 <script>
         // Platform Designer: Ali Ibrahim Asiri
         const firebaseConfig = { apiKey: "AIzaSyAA-sNJADHy52EK2nEv0DXRdzapSpgZiDo", authDomain: "rashedon-962f5.firebaseapp.com", databaseURL: "https://rashedon-962f5-default-rtdb.europe-west1.firebasedatabase.app", projectId: "rashedon-962f5", storageBucket: "rashedon-962f5.firebasestorage.app", messagingSenderId: "312107179473", appId: "1:312107179473:web:d88e231d6800ce54b654f0" };
@@ -818,6 +841,7 @@
         
         let activeWeek = 1; 
         let activeWeeksMap = { '3': 1, '6': 1, '9': 1 }; 
+        let startTimesMap = {}; // متغير لحفظ مواقيت الاختبارات
         const TOTAL_WEEKS = 36;
         
         let examStartTime = 0;
@@ -869,28 +893,89 @@
         function formatMath(text) { if(!text) return ""; if(text.includes("class=")) return text; return text.replace(/\d+/g, match => convertToArabicNumbers(match)); }
         const toAr = n => (n === undefined || n === null ? "0" : n).toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
+        // دالة حفظ وقت البدء
+        function saveStartTime(grade, val) {
+            if(isOnline) {
+                db.ref('settings/startTimes/' + grade).set(val);
+            }
+        }
+
+        // دالة تنسيق التاريخ للعرض العربي
+        function formatDateArabic(dateStr) {
+            const d = new Date(dateStr);
+            const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+            const dayName = days[d.getDay()];
+            const date = d.toLocaleDateString('ar-SA');
+            const time = d.toLocaleTimeString('ar-SA', { hour: '2-digit', minute: '2-digit' });
+            return `يوم ${dayName} بتاريخ ${date} الساعة ${time}`;
+        }
+
         try { 
             firebase.initializeApp(firebaseConfig); 
             db = firebase.database(); 
             populateWeeks();
             db.ref('.info/connected').on('value', snap => { isOnline = snap.val(); });
-            db.ref('settings').on('value', s => { if(s.exists()){ 
-                let v = s.val(); 
-                cachedLogos = v.logos || {}; 
-                if(v.timerEnabled !== undefined) { isTimerEnabled = v.timerEnabled; let timerChk = document.getElementById('toggle-timer'); if(timerChk) timerChk.checked = isTimerEnabled; }
-                if(v.timerDuration) { timerDuration = v.timerDuration; let timerInp = document.getElementById('timer-duration-input'); if(timerInp) timerInp.value = timerDuration; }
-                if(v.m2) { let b = document.getElementById('btn-m2'); if(b) { b.disabled=false; b.classList.remove('btn-locked'); b.innerHTML='بنائي'; } } else { let b = document.getElementById('btn-m2'); if(b) { b.disabled=true; b.classList.add('btn-locked'); b.innerHTML='<i class="fas fa-lock"></i> بنائي'; } }
-                if(v.m3) { let b = document.getElementById('btn-m3'); if(b) { b.disabled=false; b.classList.remove('btn-locked'); b.innerHTML='ختامي'; } } else { let b = document.getElementById('btn-m3'); if(b) { b.disabled=true; b.classList.add('btn-locked'); b.innerHTML='<i class="fas fa-lock"></i> ختامي'; } }
-                if(v.activeWeeks) {
-                    activeWeeksMap = v.activeWeeks;
-                    if(document.getElementById('week-select-3')) document.getElementById('week-select-3').value = activeWeeksMap['3'];
-                    if(document.getElementById('week-select-6')) document.getElementById('week-select-6').value = activeWeeksMap['6'];
-                    if(document.getElementById('week-select-9')) document.getElementById('week-select-9').value = activeWeeksMap['9'];
-                } else if(v.activeWeek) {
-                     activeWeek = v.activeWeek; 
-                     activeWeeksMap = {'3': activeWeek, '6': activeWeek, '9': activeWeek};
+            
+            // الكود المطور للإعدادات (الأقفال + التوقيت)
+            db.ref('settings').on('value', s => {
+                if (s.exists()) {
+                    let v = s.val();
+                    cachedLogos = v.logos || {};
+                    
+                    if (v.timerEnabled !== undefined) {
+                        isTimerEnabled = v.timerEnabled;
+                        let timerChk = document.getElementById('toggle-timer');
+                        if (timerChk) timerChk.checked = isTimerEnabled;
+                    }
+                    if (v.timerDuration) {
+                        timerDuration = v.timerDuration;
+                        let timerInp = document.getElementById('timer-duration-input');
+                        if (timerInp) timerInp.value = timerDuration;
+                    }
+
+                    // تحديث حالة الأزرار في العناصر المخفية
+                    let m2State = document.getElementById('btn-m2-state');
+                    if (m2State) {
+                        if (v.m2) {
+                            m2State.className = 'btn btn-primary';
+                            m2State.innerHTML = 'بنائي';
+                            m2State.setAttribute('data-disabled', 'false');
+                        } else {
+                            m2State.className = 'btn btn-locked';
+                            m2State.innerHTML = '<i class="fas fa-lock"></i> بنائي';
+                            m2State.setAttribute('data-disabled', 'true');
+                        }
+                    }
+
+                    let m3State = document.getElementById('btn-m3-state');
+                    if (m3State) {
+                        if (v.m3) {
+                            m3State.className = 'btn btn-primary';
+                            m3State.innerHTML = 'ختامي';
+                            m3State.setAttribute('data-disabled', 'false');
+                        } else {
+                            m3State.className = 'btn btn-locked';
+                            m3State.innerHTML = '<i class="fas fa-lock"></i> ختامي';
+                            m3State.setAttribute('data-disabled', 'true');
+                        }
+                    }
+
+                    if (v.activeWeeks) {
+                        activeWeeksMap = v.activeWeeks;
+                        if (document.getElementById('week-select-3')) document.getElementById('week-select-3').value = activeWeeksMap['3'];
+                        if (document.getElementById('week-select-6')) document.getElementById('week-select-6').value = activeWeeksMap['6'];
+                        if (document.getElementById('week-select-9')) document.getElementById('week-select-9').value = activeWeeksMap['9'];
+                    }
+
+                    if (v.startTimes) {
+                        startTimesMap = v.startTimes;
+                        if(document.getElementById('time-start-3')) document.getElementById('time-start-3').value = startTimesMap['3'] || '';
+                        if(document.getElementById('time-start-6')) document.getElementById('time-start-6').value = startTimesMap['6'] || '';
+                        if(document.getElementById('time-start-9')) document.getElementById('time-start-9').value = startTimesMap['9'] || '';
+                    }
                 }
-            }});
+            });
+
         } catch(e) { console.log(e); }
 
         function nav(id) { 
@@ -899,17 +984,34 @@
             let target = document.getElementById(id); if(target) target.classList.add('active'); window.scrollTo(0,0); 
         }
 
-        function adminLogin() { 
-            let inputPass = prompt("أدخل كلمة المرور:");
-            if(!inputPass) return;
-            document.getElementById('loading-overlay').style.display = 'flex';
-            db.ref('settings/admin_password').once('value').then(snap => {
-                document.getElementById('loading-overlay').style.display = 'none';
-                let realPass = snap.val();
-                if(inputPass === realPass) { nav('section-admin'); } else { alert("خطأ في كلمة المرور"); }
-            }).catch(e => { document.getElementById('loading-overlay').style.display = 'none'; alert("خطأ في الاتصال: " + e.message); });
-        }
+// دالة التشفير (ضرورية جداً)
+async function hashPassword(str) {
+    const msgBuffer = new TextEncoder().encode(str);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+// دالة الدخول المعدلة
+async function adminLogin() { 
+    let inputPass = prompt("أدخل كلمة المرور:");
+    if(!inputPass) return;
+    
+    document.getElementById('loading-overlay').style.display = 'flex';
+    
+    // هنا السر: نشفر ما كتبته أنت لنقارنه بما في القاعدة
+    let hashedInput = await hashPassword(inputPass);
+
+    db.ref('settings/admin_password').once('value').then(snap => {
+        document.getElementById('loading-overlay').style.display = 'none';
         
+        if(hashedInput === snap.val()) { 
+            nav('section-admin'); 
+        } else { 
+            alert("خطأ في كلمة المرور"); 
+        }
+    });
+}        
         function switchTab(t) { 
             document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); 
             document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); 
@@ -1261,7 +1363,70 @@ function goToSubjects() {
             });
         }
 
-        function selectSubject(sub, el) { state.subject = sub; document.getElementById('models-area').style.display='block'; }
+        // دالة اختيار المادة (المحدثة مع القفل الزمني)
+        function selectSubject(sub, el) {
+            state.subject = sub;
+            var modelsArea = document.getElementById('models-area');
+            var studentGrade = state.grade; // صف الطالب الحالي
+            
+            // إعادة تعيين العرض
+            modelsArea.innerHTML = ''; 
+            modelsArea.style.display = 'block';
+            document.querySelectorAll('.subject-card').forEach(c => c.style.border = '2px solid transparent');
+            el.style.border = '3px solid var(--primary)';
+
+            // منطق التحقق من الوقت
+            let startTimeStr = startTimesMap[studentGrade];
+            let isLocked = false;
+            let openMsg = "";
+
+            if (startTimeStr) {
+                let startDate = new Date(startTimeStr);
+                let now = new Date();
+                if (now < startDate) {
+                    isLocked = true;
+                    openMsg = formatDateArabic(startTimeStr);
+                }
+            }
+
+            // إذا كان الاختبار مغلقاً بسبب الوقت
+            if (isLocked) {
+                modelsArea.innerHTML = `
+                    <div style="background:#fdedec; border:2px solid #c0392b; border-radius:10px; padding:20px; margin-top:20px;">
+                        <h3 style="color:#c0392b; margin:0 0 10px 0;"><i class="fas fa-lock"></i> الاختبار مغلق حالياً</h3>
+                        <p style="font-size:1.1rem; color:#555; margin:0;">عذراً يا بطل، لم يحن موعد الاختبار بعد.</p>
+                        <div style="margin-top:15px; background:white; padding:10px; border-radius:5px; border:1px dashed #c0392b; font-weight:bold; color:#2c3e50;">
+                            سيفتح الاختبار تلقائياً في:<br>
+                            <span style="color:#d35400; font-size:1.2rem;">${openMsg}</span>
+                        </div>
+                    </div>
+                `;
+            } else {
+                // استرجاع حالة الأزرار من العناصر المخفية
+                let m2State = document.getElementById('btn-m2-state');
+                let m2Class = m2State ? m2State.className : 'btn btn-locked';
+                let m2Text = m2State ? m2State.innerHTML : '<i class="fas fa-lock"></i> بنائي';
+                let m2Disabled = m2State ? (m2State.getAttribute('data-disabled') === 'true') : true;
+                
+                let m3State = document.getElementById('btn-m3-state');
+                let m3Class = m3State ? m3State.className : 'btn btn-locked';
+                let m3Text = m3State ? m3State.innerHTML : '<i class="fas fa-lock"></i> ختامي';
+                let m3Disabled = m3State ? (m3State.getAttribute('data-disabled') === 'true') : true;
+
+                modelsArea.innerHTML = `
+                    <h3 style="color:#555; margin-bottom:15px;">نوع الاختبار:</h3>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
+                        <button id="btn-m1" class="btn btn-primary" onclick="startExam(1)">تشخيصي</button>
+                        <button id="btn-m2" class="${m2Class}" ${m2Disabled ? 'disabled' : ''} onclick="startExam(2)">${m2Text}</button>
+                        <button id="btn-m3" class="${m3Class}" ${m3Disabled ? 'disabled' : ''} onclick="startExam(3)">${m3Text}</button>
+                    </div>
+                `;
+            }
+
+            setTimeout(function() {
+                modelsArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
         
         function startExam(m) { 
             state.model = m; 
