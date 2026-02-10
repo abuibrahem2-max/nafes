@@ -8,6 +8,80 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // ===== نموذج التظليل (صورة) =====
+    function openOMRPicker(ev){
+        try{ ev && ev.preventDefault(); ev && ev.stopPropagation(); }catch(e){}
+        const inp = document.getElementById('omr-file');
+        if(!inp){ alert('لم يتم العثور على أداة رفع الصورة داخل الصفحة'); return; }
+        inp.value = "";
+        inp.onchange = async function(){
+            const file = inp.files && inp.files[0];
+            if(!file) return;
+            if(!file.type || !file.type.startsWith('image/')) { alert('الرجاء اختيار صورة فقط'); return; }
+            const reader = new FileReader();
+            reader.onload = async function(e){
+                const dataUrl = e.target.result;
+                try{
+                    localStorage.setItem('omrImageDataUrl', dataUrl);
+                    if(typeof isOnline !== 'undefined' && isOnline && typeof db !== 'undefined' && db){
+                        await db.ref('settings/omrImage').set(dataUrl);
+                    }
+                }catch(err){ console.log(err); }
+                applyOMRToDOM(dataUrl);
+                alert('تم إدراج نموذج التظليل ✅');
+            };
+            reader.readAsDataURL(file);
+        };
+        // مهم: لازم يكون الاستدعاء داخل حدث نقر مباشر حتى تسمح المتصفحات بفتح نافذة الملفات
+        inp.click();
+    }
+
+    function applyOMRToDOM(dataUrl){
+        const wrap = document.getElementById('omr-wrap');
+        const img  = document.getElementById('omr-img');
+        if(!wrap || !img) return;
+        img.src = dataUrl || '';
+        if(dataUrl){
+            wrap.classList.add('show');
+        }else{
+            wrap.classList.remove('show');
+        }
+    }
+
+    function removeOMR(ev){
+        try{ ev && ev.preventDefault(); ev && ev.stopPropagation(); }catch(e){}
+        try{
+            localStorage.removeItem('omrImageDataUrl');
+            if(typeof isOnline !== 'undefined' && isOnline && typeof db !== 'undefined' && db){
+                db.ref('settings/omrImage').remove();
+            }
+        }catch(err){ console.log(err); }
+        applyOMRToDOM(null);
+        alert('تم حذف نموذج التظليل ✅');
+    }
+
+    async function loadOMRFromStorage(){
+        try{
+            if(typeof isOnline !== 'undefined' && isOnline && typeof db !== 'undefined' && db){
+                const snap = await db.ref('settings/omrImage').once('value');
+                const v = snap.val();
+                if(v){ applyOMRToDOM(v); return; }
+            }
+            const raw = localStorage.getItem('omrImageDataUrl');
+            if(raw) applyOMRToDOM(raw);
+        }catch(err){
+            console.log(err);
+            const raw = localStorage.getItem('omrImageDataUrl');
+            if(raw) applyOMRToDOM(raw);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        // عند فتح الصفحة: حاول استرجاع نموذج التظليل إن كان محفوظًا
+        loadOMRFromStorage();
+    });
+</script>
     <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     
@@ -20,7 +94,10 @@
             svg: { fontCache: 'global' },
             options: { enableMenu: false }
         };
-    </script>
+    
+document.addEventListener('DOMContentLoaded', function(){ applyOfflineExamSettings();
+            loadExamMetaFromDBIfAvailable(); });
+</script>
     <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
     <style>
@@ -81,6 +158,7 @@
         .btn-danger { background: #c0392b; color: white; }
         .btn-success { background: #27ae60; color: white; }
         .btn-warning { background: #f39c12; color: white; }
+        .btn-info { background: #3498db; color: white; }
         .btn-locked { background: #bdc3c7; color: #7f8c8d; cursor: not-allowed; }
         .form-control { width: 100%; padding: 12px; border: 2px solid #eef2f7; border-radius: 10px; font-family: var(--font); margin-bottom: 15px; background: #fdfdfd; font-size: 1rem; transition: 0.3s; }
         .form-control:focus { border-color: var(--primary); background: #fff; }
@@ -99,7 +177,8 @@
         .math-btn.chem { border-color: #8e44ad; color: #8e44ad; }
         .live-preview-box { min-height: 80px; padding: 15px; border: 2px dashed #27ae60; background: #f0fdf4; border-radius: 10px; margin-bottom: 15px; color: #2f3542; position: relative; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; font-size: 1.1rem; }
         .live-preview-label { position: absolute; top: -12px; right: 20px; background: #27ae60; color: white; padding: 2px 10px; border-radius: 10px; font-size: 0.8rem; }
-        
+        .reading-passage { background: #f9f9f9; padding: 15px; border-right: 4px solid var(--primary); margin-bottom: 15px; white-space: pre-wrap; font-family: 'Times New Roman', serif; font-size: 1.2rem; line-height: 1.8; color: #333; text-align: justify; border-radius: 5px; }
+
         .active-week-badge { background: #e3f2fd; color: #1565c0; padding: 5px 15px; border-radius: 20px; font-size: 0.9rem; font-weight: bold; border: 1px solid #bbdefb; display: inline-block; margin-bottom: 15px; }
         #json-editor-area { display: none; background: #2d3436; padding: 15px; border-radius: 10px; margin-bottom: 20px; direction: ltr; }
         #q-json-raw { width: 100%; height: 200px; background: #1e272e; color: #00d2d3; font-family: monospace; border: none; padding: 10px; border-radius: 5px; font-size: 14px; }
@@ -137,7 +216,7 @@
         .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
         .stat-label { font-size: 0.9rem; color: #7f8c8d; margin-top: 5px; }
 
-        .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px; }
+        .charts-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 30px; }
         
         /* تنسيقات ملف الطالب الجديد */
         .profile-card { background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 20px; overflow: hidden; border: 1px solid #eee; transition: 0.3s; }
@@ -262,7 +341,41 @@
 
             #formal-answers-page { page-break-before: always; display: block; position: relative; z-index: 20; }
         }
-    </style>
+    
+        /* ===== نموذج التظليل (صورة) ===== */
+        .omr-toolbar{
+            display:flex;
+            gap:8px;
+            flex-wrap:wrap;
+            align-items:center;
+            justify-content:flex-start;
+            margin:10px 0 0 0;
+        }
+        .omr-toolbar .btn{ margin:0 !important; }
+        .omr-wrap{
+            width: 9.5cm;
+            height: 12cm;
+            margin: 12px auto 6px auto;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            page-break-inside: avoid;
+        }
+        .omr-wrap.show{ display: flex; }
+        .omr-wrap img{
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+        }
+        @media print{
+            .omr-wrap{ display: none !important; }
+            .omr-wrap.show{ display: flex !important; }
+            .omr-toolbar{ display:none !important; }
+        }
+
+</style>
 </head>
 <body>
     <div class="mobile-header">
@@ -285,6 +398,9 @@
     </div>
 
     <div class="main-content">
+        <!-- حاوية خاصة للرسم المؤقت للـ PDF مخفية بشفافية وليس بتموضع بعيد -->
+        <div id="pdf-render-container" style="position: fixed; top: 0; left: 0; width: 794px; opacity: 0; pointer-events: none; z-index: -100; background: white; transform: scale(1); overflow: visible;"></div>
+
         <div style="position: fixed; top: 0; left: 0; opacity: 0; pointer-events: none; z-index: -9999;">
             <div style="width: 500px; height: 300px;">
                 <canvas id="tempBellCurveCanvas"></canvas>
@@ -344,7 +460,7 @@
                 <div id="models-area" style="display:none; text-align:center; margin-top:30px;">
                     <h3 style="color:#555; margin-bottom:15px;">نوع الاختبار:</h3>
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-                        <button id="btn-m1" class="btn btn-primary" onclick="startExam(1)">تشخيصي</button>
+                        <button id="btn-m1" class="btn btn-locked" ${m1Disabled ? 'disabled' : ''} onclick="startExam(1)">${m1Text}</button>
                         <button id="btn-m2" class="btn btn-locked" disabled onclick="startExam(2)"><i class="fas fa-lock"></i> بنائي</button>
                         <button id="btn-m3" class="btn btn-locked" disabled onclick="startExam(3)"><i class="fas fa-lock"></i> ختامي</button>
                     </div>
@@ -443,7 +559,7 @@
                     </div>
 
                     <div id="visual-editor-area" class="q-builder">
-                        <h4 style="margin-top:0;color:var(--primary);">✍️ إضافة سؤال جديد</h4>
+                        <h4 style="margin-top:0;color:var(--primary);">✍️ إضافة / تعديل سؤال</h4>
                         <div class="math-toolbar">
                             <div style="margin-bottom:5px; font-size:0.9rem; color:#777;">الرموز الرياضية (تلقائية التحويل):</div>
                             <div class="math-group-btn">
@@ -485,14 +601,43 @@
                                 <button class="math-btn geo" onclick="insertMath('[شكل:دائرة|ن=5]')" title="دائرة بنصف قطر">دائرة (نق)</button>
                                 <button class="math-btn geo" onclick="insertMath('[شكل:دائرة|ق=10]')" title="دائرة بقطر">دائرة (ق)</button>
                                 <button class="math-btn geo" onclick="insertMath('[شكل:مربع|ل=4]')" title="مربع">مربع</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:مربع]')" title="مربع بدون أبعاد">مربع (بدون)</button>
                                 <button class="math-btn geo" onclick="insertMath('[شكل:مستطيل|ع=4|ص=3]')" title="مستطيل">مستطيل</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:مستطيل]')" title="مستطيل بدون أبعاد">مستطيل (بدون)</button>
                                 <button class="math-btn geo" onclick="insertMath('[شكل:مثلث|ق=4|ع=3]')" title="مثلث قائم">مثلث</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:مثلث]')" title="مثلث بدون أبعاد">مثلث (بدون)</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:خماسي|ل=4]')" title="مضلع خماسي منتظم">خماسي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:خماسي]')" title="خماسي بدون أطوال">خماسي (بدون)</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:سداسي|ل=4]')" title="مضلع سداسي منتظم">سداسي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:سداسي]')" title="سداسي بدون أطوال">سداسي (بدون)</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:سباعي|ل=4]')" title="مضلع سباعي منتظم">سباعي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:ثماني|ل=4]')" title="مضلع ثماني منتظم">ثماني</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:تساعي|ل=4]')" title="مضلع تساعي منتظم">تساعي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:عشاري|ل=4]')" title="مضلع عشاري منتظم">عشاري</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:مضلع|أ=12|ل=4]')" title="مضلع منتظم (حدد عدد الأضلاع)">مضلع (عام)</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:متوازي_أضلاع|ق=6|ع=4]')" title="متوازي أضلاع">متوازي أضلاع</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:معين|ل=5]')" title="معين">معين</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:شبه_منحرف|ق1=7|ق2=4|ع=3]')" title="شبه منحرف">شبه منحرف</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:طائرة_ورقية|ق=6|ع=4]')" title="طائرة ورقية (دلتا)">طائرة ورقية</button>
+
                                 <button class="math-btn geo" onclick="insertMath('[شكل:مكعب|ل=5]')" title="مكعب">مكعب</button>
                                 <button class="math-btn geo" onclick="insertMath('[شكل:منشور|ق=4|ع=6]')" title="منشور ثلاثي">منشور</button>
+
+                                <button class="math-btn geo" onclick="insertMath('[شكل:منشور_رباعي|ط=6|ع=4|ا=5]')" title="منشور رباعي (متوازي مستطيلات)">منشور رباعي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:منشور_خماسي|ل=4|ا=6]')" title="منشور خماسي قائم">منشور خماسي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:منشور_سداسي|ل=4|ا=6]')" title="منشور سداسي قائم">منشور سداسي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:هرم_ثلاثي|ل=5|ا=6]')" title="هرم ثلاثي قائم">هرم ثلاثي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:هرم_رباعي|ل=5|ا=6]')" title="هرم رباعي قائم">هرم رباعي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:هرم_خماسي|ل=5|ا=6]')" title="هرم خماسي قائم">هرم خماسي</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:اسطوانة|ن=4|ا=8]')" title="أسطوانة">أسطوانة</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:مخروط|ن=4|ا=8]')" title="مخروط">مخروط</button>
+                                <button class="math-btn geo" onclick="insertMath('[شكل:كرة|ن=5]')" title="كرة">كرة</button>
+
                                 <button class="math-btn geo" onclick="insertMath('[رسم:أ=5|ب=8|ج=3]')" title="رسم بياني أعمدة">📊 رسم بياني</button>
                             </div>
                         </div>
 
+                        <textarea id="new-q-passage" class="form-control question-input" placeholder="النص المقروء (اختياري - للقطعة أو النص - يظهر أعلى السؤال)" onfocus="setFocus(this)" style="height:80px;"></textarea>
                         <input id="new-q-text" class="form-control question-input" placeholder="نص السؤال (استخدم الأزرار أعلاه للإضافة)" onfocus="setFocus(this)" oninput="updateLivePreview()">
                         
                         <div id="live-question-preview" class="live-preview-box">
@@ -515,7 +660,15 @@
                             <input id="new-q-skill" class="form-control" placeholder="اسم المهارة / المؤشر">
                         </div>
                         <textarea id="new-q-exp" class="form-control question-input" placeholder="طريقة الحل / التبرير (اختياري - يظهر للطالب عند الخطأ)" onfocus="setFocus(this)" style="height:60px;"></textarea>
-                        <button class="btn btn-secondary" onclick="addQuestionToList()" style="width:100%;">➕ إضافة للقائمة</button>
+                        
+                        <!-- أزرار التحكم بالسؤال (إضافة / تعديل / إلغاء) -->
+                        <button id="btn-add-q" class="btn btn-secondary" onclick="addQuestionToList()" style="width:100%;">➕ إضافة للقائمة</button>
+                        
+                        <div id="btn-update-area" style="display:none; gap:10px; width:100%;">
+                            <button class="btn btn-success" onclick="saveEditedQuestion()" style="flex:1;">💾 حفظ التعديلات</button>
+                            <button class="btn btn-danger" onclick="cancelEditMode()" style="flex:1;">❌ إلغاء</button>
+                        </div>
+
                     </div>
 
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; margin-top:20px;">
@@ -540,6 +693,8 @@
                         <div style="display:flex; gap:10px;">
                             <button class="btn btn-primary" style="flex:1; background:#2c3e50;" onclick="printFormalExam(false)"><i class="fas fa-print"></i> نسخة الطالب</button>
                             <button class="btn btn-secondary" style="flex:1; background:#27ae60;" onclick="printFormalExam(true)"><i class="fas fa-check-double"></i> نسخة المعلم (الحل)</button>
+                        
+                            <button class="btn" style="flex:1; background:#8e44ad; color:#fff;" onclick="openMetaEditor()"><i class="fas fa-pen"></i> تعديل العنوان والتذييل</button>
                         </div>
                     </div>
 
@@ -623,7 +778,10 @@
                     <div id="loss-analysis-view" style="display:none; text-align:right;">
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                             <h3 style="color:var(--primary);">📊 تقرير الفاقد التعليمي</h3>
-                            <button class="btn btn-secondary" onclick="printReport('loss')"><i class="fas fa-print"></i> طباعة</button>
+                            <div style="display:flex; gap:10px;">
+                                <button class="btn btn-info" onclick="saveReportPDF('loss')"><i class="fas fa-file-pdf"></i> حفظ PDF (للجوال)</button>
+                                <button class="btn btn-secondary" onclick="printReport('loss')"><i class="fas fa-print"></i> طباعة</button>
+                            </div>
                         </div>
                         <div class="charts-grid">
                             <div class="chart-print-wrap"><canvas id="skillsChart"></canvas></div>
@@ -655,13 +813,14 @@
                             <h3 style="color:var(--primary);">📋 كشف رصد الدرجات</h3>
                             <div style="display:flex; gap:10px;">
                                 <button class="btn btn-success" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> إكسل</button>
+                                <button class="btn btn-info" onclick="saveReportPDF('grades')"><i class="fas fa-file-pdf"></i> حفظ PDF (للجوال)</button>
                                 <button class="btn btn-secondary" onclick="printReport('grades')"><i class="fas fa-print"></i> طباعة</button>
                             </div>
                         </div>
                         <div style="overflow-x:auto;">
                             <table class="simple-table">
                                 <thead>
-                                    <tr><th>م</th><th>اسم الطالب</th><th>رقم الهوية</th><th>الفصل</th><th>وقت التسليم</th><th>المدة</th><th>صحيحة</th><th>خاطئة</th><th>الدرجة</th><th>المستوى</th><th>حذف</th></tr>
+                                    <tr><th>م</th><th>اسم الطالب</th><th>رقم الهوية</th><th>الفصل</th><th>وقت التسليم</th><th>المدة</th><th>صحيحة</th><th>خاطئة</th><th>الدرجة</th><th>المستوى</th><th>إجراءات</th></tr>
                                 </thead>
                                 <tbody id="students-detailed-body"></tbody>
                             </table>
@@ -673,6 +832,7 @@
                             <h3 style="color:#c0392b;">⚠️ قائمة الطلاب الذين لم يؤدوا الاختبار</h3>
                             <div style="display:flex; gap:10px;">
                                  <button class="btn btn-success" onclick="exportToExcel()"><i class="fas fa-file-excel"></i> إكسل</button>
+                                 <button class="btn btn-info" onclick="saveReportPDF('missing')"><i class="fas fa-file-pdf"></i> حفظ PDF (للجوال)</button>
                                  <button class="btn btn-secondary" onclick="printReport('missing')"><i class="fas fa-print"></i> طباعة</button>
                             </div>
                         </div>
@@ -739,6 +899,7 @@
                                 <input type="number" id="timer-duration-input" class="form-control" style="width:80px; margin:0; text-align:center;" min="1" max="180" value="10" onchange="saveTimerSettings()">
                             </div>
                         </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><span>فتح النموذج التشخيصي</span><input type="checkbox" id="toggle-m1" onchange="toggleExam('m1')" style="width:20px; height:20px;"></div>
                         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;"><span>فتح النموذج البنائي</span><input type="checkbox" id="toggle-m2" onchange="toggleExam('m2')" style="width:20px; height:20px;"></div>
                         <div style="display:flex; justify-content:space-between; align-items:center;"><span>فتح النموذج الختامي</span><input type="checkbox" id="toggle-m3" onchange="toggleExam('m3')" style="width:20px; height:20px;"></div>
                     </div>
@@ -784,8 +945,8 @@
 
         <div id="print-content-body"></div>
         <div class="print-footer" style="margin-top:40px; display:flex; justify-content:space-between;">
-            <div class="signature"><p>معد التقارير: لجنة التميز</p><div class="name">...................</div></div>
-            <div class="signature"><p>مدير المدرسة</p><div class="name">أحمد سالم الشهري</div></div>
+            <div class="signature"><p id="pv-footer-right-label">معد التقارير</p><div class="name" id="pv-footer-right-name">لجنة التميز</div></div>
+            <div class="signature"><p id="pv-footer-left-label">مدير المدرسة</p><div class="name" id="pv-footer-left-name">أحمد سالم الشهري</div></div>
         </div>
     </div>
 
@@ -809,11 +970,17 @@
                 <div class="logo-box"><img id="f-logo-left" src="" style="max-height:100%;max-width:100%;"></div>
             </div>
             <div class="student-info-bar" style="border:2px solid #000; padding:8px; margin:10px 0; display:flex; justify-content:space-between; font-weight:bold;">
-                <span>الاسم: ...........................................</span><span>الصف: ............</span>
+                <span>الاسم: ...........................................</span><span>الصف: <span id="f-grade">............</span></span>
             </div>
             <div id="formal-questions-body"></div>
-            <div class="signatures-section" style="margin-top:30px; border-top:2px dashed #333; padding-top:10px; display:flex; justify-content:space-between;">
-                <div>معد الأسئلة: لجنة التميز</div><div>مدير المدرسة: أ. أحمد سالم الشهري</div>
+
+<!-- ===== نموذج التظليل (صورة) ===== -->
+<div class="omr-wrap" id="omr-wrap">
+    <img id="omr-img" alt="نموذج تظليل الإجابة">
+</div>
+            <div class="signatures-section" style="margin-top:10px; border-top:2px dashed #333; padding-top:10px; display:flex; justify-content:space-between;">
+                <div><span id="f-footer-right-label">معد الأسئلة</span>: <span id="f-footer-right-name">لجنة التميز</span></div>
+                <div><span id="f-footer-left-label">مدير المدرسة</span>: <span id="f-footer-left-name">أحمد سالم الشهري</span></div>
             </div>
         </div>
         <div id="formal-answers-page" class="formal-container">
@@ -824,13 +991,26 @@
     
     <span id="btn-m2-state" style="display:none;" class="btn btn-locked" data-disabled="true"></span>
     <span id="btn-m3-state" style="display:none;" class="btn btn-locked" data-disabled="true"></span>
-
 <script>
         // Platform Designer: Ali Ibrahim Asiri
         const firebaseConfig = { apiKey: "AIzaSyAA-sNJADHy52EK2nEv0DXRdzapSpgZiDo", authDomain: "rashedon-962f5.firebaseapp.com", databaseURL: "https://rashedon-962f5-default-rtdb.europe-west1.firebasedatabase.app", projectId: "rashedon-962f5", storageBucket: "rashedon-962f5.firebasestorage.app", messagingSenderId: "312107179473", appId: "1:312107179473:web:d88e231d6800ce54b654f0" };
+        
+        // Helper function to safely render MathJax by checking if the promise function exists
+        function safeMathJaxRender(element = null) {
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') {
+                let target = element ? [element] : null;
+                MathJax.typesetPromise(target).catch(function (err) {
+                    console.log('MathJax rendering error: ' + err.message);
+                });
+            } else {
+                console.log('MathJax is not yet fully loaded or initialized.');
+            }
+        }
+
         let db = null; let isOnline = false;
         let cachedLogos = { ministry: null, vision: null, school: null };
         let tempQuestionList = []; 
+        let editingIndex = -1; // متغير لتتبع السؤال الذي يتم تعديله
         let gradeMap = {'3': 'الصفوف الأولية', '6': 'الصفوف العليا', '9': 'المرحلة المتوسطة'};
         let subMap = { 'math': 'الرياضيات', 'sci': 'العلوم', 'read': 'لغتي' };
         let modelMap = { '1': 'تشخيصي', '2': 'بنائي', '3': 'ختامي' };
@@ -841,12 +1021,20 @@
         
         let activeWeek = 1; 
         let activeWeeksMap = { '3': 1, '6': 1, '9': 1 }; 
-        let startTimesMap = {}; // متغير لحفظ مواقيت الاختبارات
+        let startTimesMap = {}; 
         const TOTAL_WEEKS = 36;
         
         let examStartTime = 0;
         let calculatedStats = {};
         let studentChartInstance = null;
+
+        function normalizeID(id) {
+            if (!id) return "";
+            let str = String(id).trim();
+            const map = { '٠':'0','١':'1','٢':'2','٣':'3','٤':'4','٥':'5','٦':'6','٧':'7','٨':'8','٩':'9'};
+            str = str.replace(/[٠-٩]/g, m => map[m]);
+            return str.replace(/\D/g, ''); 
+        }
 
         function sanitizeHTML(str) {
             if (!str) return "";
@@ -878,13 +1066,225 @@
             s = s.replace(/\[عدد_كسري:(.*?)\|(.*?)\|(.*?)\]/g, (m, w, t, b) => `<div class='mixed-num' style='direction:ltr !important'><div class='whole'>${w}</div><div class='frac'><div class='top'>${t}</div><div class='bottom'>${b}</div></div></div>`);
             s = s.replace(/\[أس:(.*?)\|(.*?)\]/g, (m, b, e) => `<span class='power'><span class='base'>${b}</span><span class='exp'>${e}</span></span>`);
             s = s.replace(/\[مطلق:(.*?)\]/g, (m, v) => `<span class='abs-val'>${v}</span>`);
-            s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><circle cx='30' cy='30' r='25' fill='none' stroke='black' stroke-width='2'/><line x1='30' y1='30' x2='55' y2='30' stroke='black' stroke-width='1'/><text x='42' y='25' class='geo-label'>${v}</text></svg></div>`);
+            
+            // === أشكال ثنائية الأبعاد بدون قياسات ===
+            s = s.replace(/\[شكل:دائرة\]/g, () => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><circle cx='30' cy='30' r='25' fill='none' stroke='black' stroke-width='2'/></svg></div>`);
+            s = s.replace(/\[شكل:مربع\]/g, () => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><rect x='5' y='5' width='50' height='50' fill='none' stroke='black' stroke-width='2'/></svg></div>`);
+            s = s.replace(/\[شكل:مستطيل\]/g, () => `<div class='geo-shape'><svg width='80' height='50' style='overflow:visible'><rect x='5' y='5' width='70' height='40' fill='none' stroke='black' stroke-width='2'/></svg></div>`);
+            s = s.replace(/\[شكل:مثلث\]/g, () => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><polygon points='5,55 55,55 5,5' fill='none' stroke='black' stroke-width='2'/></svg></div>`);
+            // مضلعات مسماة بدون أطوال
+            s = s.replace(/\[شكل:خماسي\]/g, () => { const pts = _regularPolygonPoints(5); return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'><polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/></svg></div>`; });
+            s = s.replace(/\[شكل:سداسي\]/g, () => { const pts = _regularPolygonPoints(6); return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'><polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/></svg></div>`; });
+            s = s.replace(/\[شكل:سباعي\]/g, () => { const pts = _regularPolygonPoints(7); return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'><polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/></svg></div>`; });
+            s = s.replace(/\[شكل:ثماني\]/g, () => { const pts = _regularPolygonPoints(8); return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'><polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/></svg></div>`; });
+            s = s.replace(/\[شكل:تساعي\]/g, () => { const pts = _regularPolygonPoints(9); return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'><polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/></svg></div>`; });
+            s = s.replace(/\[شكل:عشاري\]/g, () => { const pts = _regularPolygonPoints(10); return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'><polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/></svg></div>`; });
+
+            // مضلع عام بدون طول ضلع
+            s = s.replace(/\[شكل:مضلع\|أ=(\d+)\]/g, (m, sides) => {
+                const pts = _regularPolygonPoints(sides);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                </svg></div>`;
+            });
+s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><circle cx='30' cy='30' r='25' fill='none' stroke='black' stroke-width='2'/><line x1='30' y1='30' x2='55' y2='30' stroke='black' stroke-width='1'/><text x='42' y='25' class='geo-label'>${v}</text></svg></div>`);
             s = s.replace(/\[شكل:دائرة\|ق=(.*?)\]/g, (m, v) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><circle cx='30' cy='30' r='25' fill='none' stroke='black' stroke-width='2'/><line x1='5' y1='30' x2='55' y2='30' stroke='black' stroke-width='1'/><text x='30' y='25' class='geo-label' text-anchor='middle'>${v}</text></svg></div>`);
             s = s.replace(/\[شكل:مربع\|ل=(.*?)\]/g, (m, v) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><rect x='5' y='5' width='50' height='50' fill='none' stroke='black' stroke-width='2'/><text x='30' y='75' class='geo-label' text-anchor='middle'>${v}</text></svg></div>`);
             s = s.replace(/\[شكل:مستطيل\|ع=(.*?)\|ص=(.*?)\]/g, (m, w, h) => `<div class='geo-shape'><svg width='80' height='50' style='overflow:visible'><rect x='5' y='5' width='70' height='40' fill='none' stroke='black' stroke-width='2'/><text x='40' y='65' class='geo-label' text-anchor='middle'>${w}</text><text x='82' y='30' class='geo-label'>${h}</text></svg></div>`);
             s = s.replace(/\[شكل:مثلث\|ق=(.*?)\|ع=(.*?)\]/g, (m, b, h) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><polygon points='5,55 55,55 5,5' fill='none' stroke='black' stroke-width='2'/><text x='30' y='75' class='geo-label' text-anchor='middle'>${b}</text><text x='-10' y='30' class='geo-label'>${h}</text></svg></div>`);
+            // === مضلعات ثنائية الأبعاد (ابتدائي + متوسط) ===
+            // مولّد نقاط مضلع منتظم داخل SVG
+            const _regularPolygonPoints = (sides, cx=35, cy=35, r=25, rotDeg=-90) => {
+                sides = Math.max(3, Math.min(20, parseInt(sides || 3)));
+                const rot = (Math.PI/180) * rotDeg;
+                let pts = [];
+                for(let i=0;i<sides;i++){
+                    const ang = rot + (2*Math.PI*i/sides);
+                    const x = cx + r*Math.cos(ang);
+                    const y = cy + r*Math.sin(ang);
+                    pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+                }
+                return pts.join(' ');
+            };
+
+            // مضلع عام: أ = عدد الأضلاع، ل = طول ضلع (للعرض فقط)
+            s = s.replace(/\[شكل:مضلع\|أ=(\d+)\|ل=(.*?)\]/g, (m, sides, side) => {
+                const pts = _regularPolygonPoints(sides);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>أ=${sides} ، ل=${side}</text>
+                </svg></div>`;
+            });
+
+            // مضلعات منتظمة جاهزة (خماسي/سداسي/سباعي/ثماني/تساعي/عشاري)
+            s = s.replace(/\[شكل:خماسي\|ل=(.*?)\]/g, (m, side) => {
+                const pts = _regularPolygonPoints(5);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                </svg></div>`;
+            });
+            s = s.replace(/\[شكل:سداسي\|ل=(.*?)\]/g, (m, side) => {
+                const pts = _regularPolygonPoints(6);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                </svg></div>`;
+            });
+            s = s.replace(/\[شكل:سباعي\|ل=(.*?)\]/g, (m, side) => {
+                const pts = _regularPolygonPoints(7);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                </svg></div>`;
+            });
+            s = s.replace(/\[شكل:ثماني\|ل=(.*?)\]/g, (m, side) => {
+                const pts = _regularPolygonPoints(8);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                </svg></div>`;
+            });
+            s = s.replace(/\[شكل:تساعي\|ل=(.*?)\]/g, (m, side) => {
+                const pts = _regularPolygonPoints(9);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                </svg></div>`;
+            });
+            s = s.replace(/\[شكل:عشاري\|ل=(.*?)\]/g, (m, side) => {
+                const pts = _regularPolygonPoints(10);
+                return `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                    <polygon points='${pts}' fill='none' stroke='black' stroke-width='2'/>
+                    <text x='40' y='76' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                </svg></div>`;
+            });
+
+            // رباعيات شائعة: متوازي أضلاع، معين، شبه منحرف، طائرة ورقية
+            s = s.replace(/\[شكل:متوازي_أضلاع\|ق=(.*?)\|ع=(.*?)\]/g, (m, base, height) => `<div class='geo-shape'><svg width='90' height='70' style='overflow:visible'>
+                <polygon points='20,55 75,55 60,15 5,15' fill='none' stroke='black' stroke-width='2'/>
+                <text x='40' y='68' class='geo-label' text-anchor='middle'>ق=${base}</text>
+                <text x='82' y='38' class='geo-label'>ع=${height}</text>
+            </svg></div>`);
+            s = s.replace(/\[شكل:معين\|ل=(.*?)\]/g, (m, side) => `<div class='geo-shape'><svg width='80' height='70' style='overflow:visible'>
+                <polygon points='40,5 70,35 40,65 10,35' fill='none' stroke='black' stroke-width='2'/>
+                <text x='40' y='78' class='geo-label' text-anchor='middle'>ل=${side}</text>
+            </svg></div>`);
+            s = s.replace(/\[شكل:شبه_منحرف\|ق1=(.*?)\|ق2=(.*?)\|ع=(.*?)\]/g, (m, b1, b2, h) => `<div class='geo-shape'><svg width='95' height='70' style='overflow:visible'>
+                <polygon points='15,55 80,55 65,15 30,15' fill='none' stroke='black' stroke-width='2'/>
+                <text x='48' y='68' class='geo-label' text-anchor='middle'>ق١=${b1} ، ق٢=${b2}</text>
+                <text x='86' y='38' class='geo-label'>ع=${h}</text>
+            </svg></div>`);
+            s = s.replace(/\[شكل:طائرة_ورقية\|ق=(.*?)\|ع=(.*?)\]/g, (m, diag, other) => `<div class='geo-shape'><svg width='85' height='80' style='overflow:visible'>
+                <polygon points='42,5 70,35 42,75 14,35' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='42' y1='5' x2='42' y2='75' stroke='black' stroke-width='1' stroke-dasharray='4 3'/>
+                <line x1='14' y1='35' x2='70' y2='35' stroke='black' stroke-width='1' stroke-dasharray='4 3'/>
+                <text x='42' y='92' class='geo-label' text-anchor='middle'>ق=${diag} ، ع=${other}</text>
+            </svg></div>`);
+
             s = s.replace(/\[شكل:مكعب\|ل=(.*?)\]/g, (m, v) => `<div class='geo-shape'><svg width='60' height='60' style='overflow:visible'><rect x='5' y='15' width='40' height='40' fill='none' stroke='black' stroke-width='2'/><path d='M5 15 L20 0 L60 0 L60 40 L45 55' fill='none' stroke='black' stroke-width='2'/><path d='M45 15 L60 0' fill='none' stroke='black' stroke-width='2'/><text x='25' y='75' class='geo-label' text-anchor='middle'>${v}</text></svg></div>`);
             s = s.replace(/\[شكل:منشور\|ق=(.*?)\|ع=(.*?)\]/g, (m, b, h) => `<div class='geo-shape'><svg width='80' height='60' style='overflow:visible'><polygon points='10,50 40,50 25,20' fill='none' stroke='black' stroke-width='2'/><polygon points='50,40 80,40 65,10' fill='none' stroke='black' stroke-width='2'/><line x1='10' y1='50' x2='50' y2='40' stroke='black' stroke-width='2'/><line x1='40' y1='50' x2='80' y2='40' stroke='black' stroke-width='2'/><line x1='25' y1='20' x2='65' y2='10' stroke='black' stroke-width='2'/><text x='25' y='65' class='geo-label' text-anchor='middle'>${b}</text><text x='70' y='30' class='geo-label'>${h}</text></svg></div>`);
+
+            // === أشكال ثلاثية الأبعاد إضافية (ابتدائي + متوسط) ===
+            // منشور رباعي قائم (متوازي مستطيلات)
+            s = s.replace(/\[شكل:منشور_رباعي\|ط=(.*?)\|ع=(.*?)\|ا=(.*?)\]/g, (m, L, W, H) => `<div class='geo-shape'><svg width='90' height='70' style='overflow:visible'>
+                <rect x='10' y='25' width='50' height='35' fill='none' stroke='black' stroke-width='2'/>
+                <polygon points='10,25 25,10 75,10 60,25' fill='none' stroke='black' stroke-width='2'/>
+                <polygon points='60,25 75,10 75,45 60,60' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='10' y1='60' x2='25' y2='45' stroke='black' stroke-width='2'/>
+                <line x1='60' y1='60' x2='75' y2='45' stroke='black' stroke-width='2'/>
+                <line x1='60' y1='25' x2='25' y2='10' stroke='black' stroke-width='2'/>
+                <text x='35' y='68' class='geo-label' text-anchor='middle'>ط=${L}</text>
+                <text x='82' y='45' class='geo-label'>ا=${H}</text>
+                <text x='80' y='18' class='geo-label'>ع=${W}</text>
+            </svg></div>`);
+
+            // منشور خماسي قائم
+            s = s.replace(/\[شكل:منشور_خماسي\|ل=(.*?)\|ا=(.*?)\]/g, (m, side, H) => `<div class='geo-shape'><svg width='95' height='75' style='overflow:visible'>
+                <polygon points='25,55 40,30 65,30 80,55 52,68' fill='none' stroke='black' stroke-width='2'/>
+                <polygon points='10,45 25,20 50,20 65,45 37,58' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='25' y1='55' x2='10' y2='45' stroke='black' stroke-width='2'/>
+                <line x1='40' y1='30' x2='25' y2='20' stroke='black' stroke-width='2'/>
+                <line x1='65' y1='30' x2='50' y2='20' stroke='black' stroke-width='2'/>
+                <line x1='80' y1='55' x2='65' y2='45' stroke='black' stroke-width='2'/>
+                <line x1='52' y1='68' x2='37' y2='58' stroke='black' stroke-width='2'/>
+                <text x='52' y='74' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                <text x='82' y='30' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // منشور سداسي قائم
+            s = s.replace(/\[شكل:منشور_سداسي\|ل=(.*?)\|ا=(.*?)\]/g, (m, side, H) => `<div class='geo-shape'><svg width='100' height='75' style='overflow:visible'>
+                <polygon points='30,55 42,35 62,35 74,55 62,68 42,68' fill='none' stroke='black' stroke-width='2'/>
+                <polygon points='12,45 24,25 44,25 56,45 44,58 24,58' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='30' y1='55' x2='12' y2='45' stroke='black' stroke-width='2'/>
+                <line x1='42' y1='35' x2='24' y2='25' stroke='black' stroke-width='2'/>
+                <line x1='62' y1='35' x2='44' y2='25' stroke='black' stroke-width='2'/>
+                <line x1='74' y1='55' x2='56' y2='45' stroke='black' stroke-width='2'/>
+                <line x1='62' y1='68' x2='44' y2='58' stroke='black' stroke-width='2'/>
+                <line x1='42' y1='68' x2='24' y2='58' stroke='black' stroke-width='2'/>
+                <text x='52' y='74' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                <text x='85' y='28' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // هرم ثلاثي قائم
+            s = s.replace(/\[شكل:هرم_ثلاثي\|ل=(.*?)\|ا=(.*?)\]/g, (m, side, H) => `<div class='geo-shape'><svg width='85' height='75' style='overflow:visible'>
+                <polygon points='15,60 70,60 30,30' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='30' y1='30' x2='45' y2='10' stroke='black' stroke-width='2'/>
+                <line x1='15' y1='60' x2='45' y2='10' stroke='black' stroke-width='2'/>
+                <line x1='70' y1='60' x2='45' y2='10' stroke='black' stroke-width='2'/>
+                <text x='42' y='74' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                <text x='60' y='18' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // هرم رباعي قائم
+            s = s.replace(/\[شكل:هرم_رباعي\|ل=(.*?)\|ا=(.*?)\]/g, (m, side, H) => `<div class='geo-shape'><svg width='85' height='75' style='overflow:visible'>
+                <rect x='15' y='40' width='50' height='25' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='15' y1='40' x2='40' y2='10' stroke='black' stroke-width='2'/>
+                <line x1='65' y1='40' x2='40' y2='10' stroke='black' stroke-width='2'/>
+                <line x1='15' y1='65' x2='40' y2='10' stroke='black' stroke-width='2'/>
+                <line x1='65' y1='65' x2='40' y2='10' stroke='black' stroke-width='2'/>
+                <text x='40' y='74' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                <text x='52' y='20' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // هرم خماسي قائم
+            s = s.replace(/\[شكل:هرم_خماسي\|ل=(.*?)\|ا=(.*?)\]/g, (m, side, H) => `<div class='geo-shape'><svg width='95' height='80' style='overflow:visible'>
+                <polygon points='20,60 35,40 60,40 75,60 47,72' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='20' y1='60' x2='47' y2='12' stroke='black' stroke-width='2'/>
+                <line x1='35' y1='40' x2='47' y2='12' stroke='black' stroke-width='2'/>
+                <line x1='60' y1='40' x2='47' y2='12' stroke='black' stroke-width='2'/>
+                <line x1='75' y1='60' x2='47' y2='12' stroke='black' stroke-width='2'/>
+                <line x1='47' y1='72' x2='47' y2='12' stroke='black' stroke-width='2' stroke-dasharray='4 3'/>
+                <text x='47' y='79' class='geo-label' text-anchor='middle'>ل=${side}</text>
+                <text x='56' y='24' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // أسطوانة
+            s = s.replace(/\[شكل:اسطوانة\|ن=(.*?)\|ا=(.*?)\]/g, (m, r, H) => `<div class='geo-shape'><svg width='85' height='80' style='overflow:visible'>
+                <ellipse cx='42' cy='18' rx='25' ry='10' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='17' y1='18' x2='17' y2='60' stroke='black' stroke-width='2'/>
+                <line x1='67' y1='18' x2='67' y2='60' stroke='black' stroke-width='2'/>
+                <ellipse cx='42' cy='60' rx='25' ry='10' fill='none' stroke='black' stroke-width='2'/>
+                <text x='42' y='76' class='geo-label' text-anchor='middle'>نق=${r}</text>
+                <text x='72' y='42' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // مخروط
+            s = s.replace(/\[شكل:مخروط\|ن=(.*?)\|ا=(.*?)\]/g, (m, r, H) => `<div class='geo-shape'><svg width='85' height='85' style='overflow:visible'>
+                <ellipse cx='42' cy='65' rx='25' ry='10' fill='none' stroke='black' stroke-width='2'/>
+                <line x1='17' y1='65' x2='42' y2='10' stroke='black' stroke-width='2'/>
+                <line x1='67' y1='65' x2='42' y2='10' stroke='black' stroke-width='2'/>
+                <text x='42' y='82' class='geo-label' text-anchor='middle'>نق=${r}</text>
+                <text x='55' y='32' class='geo-label'>ا=${H}</text>
+            </svg></div>`);
+
+            // كرة
+            s = s.replace(/\[شكل:كرة\|ن=(.*?)\]/g, (m, r) => `<div class='geo-shape'><svg width='80' height='80' style='overflow:visible'>
+                <circle cx='40' cy='40' r='25' fill='none' stroke='black' stroke-width='2'/>
+                <ellipse cx='40' cy='40' rx='25' ry='9' fill='none' stroke='black' stroke-width='1.5' stroke-dasharray='4 3'/>
+                <ellipse cx='40' cy='40' rx='9' ry='25' fill='none' stroke='black' stroke-width='1.5' stroke-dasharray='4 3'/>
+                <text x='40' y='76' class='geo-label' text-anchor='middle'>نق=${r}</text>
+            </svg></div>`);
             s = s.replace(/\[رسم:(.*?)\]/g, (m, allVals) => { let parts = allVals.split('|'); let barsHtml = ""; let maxVal = 0; let data = parts.map(p => { let [k,v] = p.split('='); v=parseInt(v); if(v>maxVal) maxVal=v; return {label:k, val:v}; }); data.forEach(d => { let hPercent = (d.val / maxVal) * 80; barsHtml += `<div class='bar-col'><div class='bar-val' style='height:${hPercent}px' data-val='${d.val}'></div><div class='bar-lbl'>${d.label}</div></div>`; }); return `<div class='geo-shape'><div class='bar-chart-container'>${barsHtml}</div></div>`; });
             return s;
         }
@@ -893,14 +1293,12 @@
         function formatMath(text) { if(!text) return ""; if(text.includes("class=")) return text; return text.replace(/\d+/g, match => convertToArabicNumbers(match)); }
         const toAr = n => (n === undefined || n === null ? "0" : n).toString().replace(/\d/g, d => "٠١٢٣٤٥٦٧٨٩"[d]);
 
-        // دالة حفظ وقت البدء
         function saveStartTime(grade, val) {
             if(isOnline) {
                 db.ref('settings/startTimes/' + grade).set(val);
             }
         }
 
-        // دالة تنسيق التاريخ للعرض العربي
         function formatDateArabic(dateStr) {
             const d = new Date(dateStr);
             const days = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
@@ -916,7 +1314,6 @@
             populateWeeks();
             db.ref('.info/connected').on('value', snap => { isOnline = snap.val(); });
             
-            // الكود المطور للإعدادات (الأقفال + التوقيت)
             db.ref('settings').on('value', s => {
                 if (s.exists()) {
                     let v = s.val();
@@ -933,17 +1330,35 @@
                         if (timerInp) timerInp.value = timerDuration;
                     }
 
-                    // تحديث حالة الأزرار في العناصر المخفية
+                    let m1State = document.getElementById('btn-m1-state');
+                    if (m1State) {
+                        if (v.m1 !== false) { // default مفتوح
+                            m1State.className = 'btn btn-primary';
+                            m1State.innerHTML = 'تشخيصي';
+                            m1State.setAttribute('data-disabled', 'false');
+                            if (document.getElementById('toggle-m1')) document.getElementById('toggle-m1').checked = true;
+                        } else {
+                            m1State.className = 'btn btn-locked';
+                            m1State.innerHTML = '<i class="fas fa-lock"></i> تشخيصي';
+                            m1State.setAttribute('data-disabled', 'true');
+                            if (document.getElementById('toggle-m1')) document.getElementById('toggle-m1').checked = false;
+                        }
+                    } else {
+                        if (document.getElementById('toggle-m1')) document.getElementById('toggle-m1').checked = (v.m1 !== false);
+                    }
+
                     let m2State = document.getElementById('btn-m2-state');
                     if (m2State) {
                         if (v.m2) {
                             m2State.className = 'btn btn-primary';
                             m2State.innerHTML = 'بنائي';
                             m2State.setAttribute('data-disabled', 'false');
+                            if (document.getElementById('toggle-m2')) document.getElementById('toggle-m2').checked = true;
                         } else {
                             m2State.className = 'btn btn-locked';
                             m2State.innerHTML = '<i class="fas fa-lock"></i> بنائي';
                             m2State.setAttribute('data-disabled', 'true');
+                            if (document.getElementById('toggle-m2')) document.getElementById('toggle-m2').checked = false;
                         }
                     }
 
@@ -953,10 +1368,12 @@
                             m3State.className = 'btn btn-primary';
                             m3State.innerHTML = 'ختامي';
                             m3State.setAttribute('data-disabled', 'false');
+                            if (document.getElementById('toggle-m3')) document.getElementById('toggle-m3').checked = true;
                         } else {
                             m3State.className = 'btn btn-locked';
                             m3State.innerHTML = '<i class="fas fa-lock"></i> ختامي';
                             m3State.setAttribute('data-disabled', 'true');
+                            if (document.getElementById('toggle-m3')) document.getElementById('toggle-m3').checked = false;
                         }
                     }
 
@@ -978,40 +1395,55 @@
 
         } catch(e) { console.log(e); }
 
-        function nav(id) { 
+        
+        function applyOfflineExamSettings() {
+            try {
+                const raw = localStorage.getItem('examsSettings');
+                if(!raw) return;
+                const v = JSON.parse(raw);
+                const setBtn = (id, isOpen, label) => {
+                    const el = document.getElementById(id);
+                    if(!el) return;
+                    if(isOpen) { el.className='btn btn-primary'; el.innerHTML=label; el.setAttribute('data-disabled','false'); }
+                    else { el.className='btn btn-locked'; el.innerHTML='<i class="fas fa-lock"></i> '+label; el.setAttribute('data-disabled','true'); }
+                };
+                if(typeof v.m1 === 'boolean') setBtn('btn-m1-state', v.m1, 'تشخيصي');
+                if(typeof v.m2 === 'boolean') setBtn('btn-m2-state', v.m2, 'بنائي');
+                if(typeof v.m3 === 'boolean') setBtn('btn-m3-state', v.m3, 'ختامي');
+
+                if(document.getElementById('toggle-m1') && typeof v.m1 === 'boolean') document.getElementById('toggle-m1').checked = v.m1;
+                if(document.getElementById('toggle-m2') && typeof v.m2 === 'boolean') document.getElementById('toggle-m2').checked = v.m2;
+                if(document.getElementById('toggle-m3') && typeof v.m3 === 'boolean') document.getElementById('toggle-m3').checked = v.m3;
+            } catch(e) { console.log(e); }
+        }
+
+function nav(id) { 
             if(examTimer) { clearInterval(examTimer); document.getElementById('exam-timer').style.display = 'none'; }
             document.querySelectorAll('.section').forEach(s => s.classList.remove('active')); 
             let target = document.getElementById(id); if(target) target.classList.add('active'); window.scrollTo(0,0); 
         }
 
-// دالة التشفير (ضرورية جداً)
-async function hashPassword(str) {
-    const msgBuffer = new TextEncoder().encode(str);
-    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
-    const hashArray = Array.from(new Uint8Array(hashBuffer));
-    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-// دالة الدخول المعدلة
-async function adminLogin() { 
-    let inputPass = prompt("أدخل كلمة المرور:");
-    if(!inputPass) return;
-    
-    document.getElementById('loading-overlay').style.display = 'flex';
-    
-    // هنا السر: نشفر ما كتبته أنت لنقارنه بما في القاعدة
-    let hashedInput = await hashPassword(inputPass);
-
-    db.ref('settings/admin_password').once('value').then(snap => {
-        document.getElementById('loading-overlay').style.display = 'none';
-        
-        if(hashedInput === snap.val()) { 
-            nav('section-admin'); 
-        } else { 
-            alert("خطأ في كلمة المرور"); 
+        async function hashPassword(str) {
+            const msgBuffer = new TextEncoder().encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         }
-    });
-}        
+
+        async function adminLogin() { 
+            let inputPass = prompt("أدخل كلمة المرور:");
+            if(!inputPass) return;
+            document.getElementById('loading-overlay').style.display = 'flex';
+            let hashedInput = await hashPassword(inputPass);
+            db.ref('settings/admin_password').once('value').then(snap => {
+                document.getElementById('loading-overlay').style.display = 'none';
+                if(hashedInput === snap.val()) { 
+                    nav('section-admin'); 
+                } else { 
+                    alert("خطأ في كلمة المرور"); 
+                }
+            });
+        }        
         function switchTab(t) { 
             document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active')); 
             document.querySelectorAll('.tab-content').forEach(c=>c.classList.remove('active')); 
@@ -1020,9 +1452,138 @@ async function adminLogin() {
         }
         function setFocus(el) { lastFocusedInput = el; if(el.id==='new-q-text') updateLivePreview(); }
         function insertMath(symbol) { if(lastFocusedInput) { let s = lastFocusedInput.selectionStart, e = lastFocusedInput.selectionEnd; lastFocusedInput.value = lastFocusedInput.value.substring(0, s) + symbol + lastFocusedInput.value.substring(e); lastFocusedInput.focus(); if(lastFocusedInput.id === 'new-q-text') updateLivePreview(); } else { alert("ضع المؤشر في خانة السؤال أولاً"); } }
-        function updateLivePreview() { let rawText = document.getElementById('new-q-text').value; let processedText = formatMath(smartFixMath(sanitizeHTML(rawText))); document.getElementById('live-preview-content').innerHTML = processedText || "اكتب السؤال..."; if(window.MathJax) MathJax.typesetPromise().catch(e=>{}); }
-        function addQuestionToList() { let t = document.getElementById('new-q-text').value; let ans = document.getElementById('new-q-ans').value; if(!t || !ans) return alert("الرجاء كتابة السؤال واختيار الإجابة"); let q = { t: sanitizeHTML(t), o: [1,2,3,4].map(n=>sanitizeHTML(document.getElementById('new-q-o'+n).value)), a: parseInt(ans), s: document.getElementById('new-q-skill').value, e: document.getElementById('new-q-exp').value }; tempQuestionList.push(q); renderList(); document.getElementById('new-q-text').value = ''; updateLivePreview(); }
-        function renderList() { let d = document.getElementById('questions-list-container'); document.getElementById('q-count').innerText = tempQuestionList.length; d.innerHTML = tempQuestionList.length ? tempQuestionList.map((q,i) => `<div style="border-bottom:1px solid #eee; padding:10px; margin-bottom:5px; background:#fff;"><div style="display:flex; justify-content:space-between; margin-bottom:5px;"><div style="font-weight:bold; color:var(--primary);">${i+1}. ${formatMath(smartFixMath(q.t))}</div><button onclick="tempQuestionList.splice(${i},1);renderList()" style="color:red;border:none;background:none;cursor:pointer;">🗑️</button></div><ul style="font-size:0.9rem; color:#555; list-style:none; padding:0; margin:0;">${q.o.map((o,x) => `<li style="${x===q.a ? 'color:green;font-weight:bold;':''}">${x===q.a?'✅ ': '⚪ '}${formatMath(smartFixMath(o))}</li>`).join('')}</ul></div>`).join('') : '<div style="text-align:center;color:#777;padding:20px;">القائمة فارغة</div>'; if(window.MathJax) MathJax.typesetPromise(); }
+        function updateLivePreview() { let rawText = document.getElementById('new-q-text').value; let processedText = formatMath(smartFixMath(sanitizeHTML(rawText))); document.getElementById('live-preview-content').innerHTML = processedText || "اكتب السؤال..."; safeMathJaxRender(); }
+        
+        function addQuestionToList() {
+            // تأكد من أننا لسنا في وضع التعديل
+            if (editingIndex !== -1) {
+                if(!confirm("أنت في وضع التعديل، هل تريد إلغاء التعديل وإضافة سؤال جديد؟")) return;
+                cancelEditMode();
+            }
+
+            let t = document.getElementById('new-q-text').value; 
+            let p = document.getElementById('new-q-passage').value;
+            let ans = document.getElementById('new-q-ans').value; 
+            if(!t || !ans) return alert("الرجاء كتابة السؤال واختيار الإجابة"); 
+            let q = { p: sanitizeHTML(p), t: sanitizeHTML(t), o: [1,2,3,4].map(n=>sanitizeHTML(document.getElementById('new-q-o'+n).value)), a: parseInt(ans), s: document.getElementById('new-q-skill').value, e: document.getElementById('new-q-exp').value }; 
+            tempQuestionList.push(q); 
+            renderList(); 
+            
+            // تنظيف الحقول
+            document.getElementById('new-q-text').value = ''; 
+            document.getElementById('new-q-passage').value = '';
+            [1,2,3,4].forEach(n=>document.getElementById('new-q-o'+n).value = '');
+            document.getElementById('new-q-ans').value = '';
+            document.getElementById('new-q-skill').value = '';
+            document.getElementById('new-q-exp').value = '';
+            updateLivePreview(); 
+        }
+
+        // دالة عرض القائمة مع أزرار التعديل والحذف
+        function renderList() { 
+            let d = document.getElementById('questions-list-container'); 
+            document.getElementById('q-count').innerText = tempQuestionList.length; 
+            d.innerHTML = tempQuestionList.length ? tempQuestionList.map((q,i) => `
+                <div style="border-bottom:1px solid #eee; padding:10px; margin-bottom:5px; background:${i === editingIndex ? '#e3f2fd' : '#fff'}; border-right:${i === editingIndex ? '4px solid var(--primary)' : 'none'};">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:5px;">
+                        <div style="font-weight:bold; color:var(--primary);">${i+1}. ${formatMath(smartFixMath(q.t))} ${q.p ? '📄' : ''}</div>
+                        <div style="display:flex; gap:10px;">
+                            <button onclick="editQuestion(${i})" title="تعديل" style="color:blue;border:none;background:none;cursor:pointer;font-size:1.1rem;"><i class="fas fa-pen"></i></button>
+                            <button onclick="deleteQuestion(${i})" title="حذف" style="color:red;border:none;background:none;cursor:pointer;font-size:1.1rem;"><i class="fas fa-trash"></i></button>
+                        </div>
+                    </div>
+                    <ul style="font-size:0.9rem; color:#555; list-style:none; padding:0; margin:0;">
+                        ${q.o.map((o,x) => `<li style="${x===q.a ? 'color:green;font-weight:bold;':''}">${x===q.a?'✅ ': '⚪ '}${formatMath(smartFixMath(o))}</li>`).join('')}
+                    </ul>
+                </div>
+            `).join('') : '<div style="text-align:center;color:#777;padding:20px;">القائمة فارغة</div>'; 
+            safeMathJaxRender(); 
+        }
+
+        // دالة جديدة لحذف سؤال
+        function deleteQuestion(i) {
+            if(confirm("هل أنت متأكد من حذف هذا السؤال؟")) {
+                tempQuestionList.splice(i,1);
+                // إذا كنا نعدل سؤالاً وتم حذفه، نلغي وضع التعديل
+                if (editingIndex === i) cancelEditMode();
+                else if (editingIndex > i) editingIndex--; // تصحيح الفهرس إذا كان التعديل في سؤال لاحق
+                renderList();
+            }
+        }
+
+        // دالة جديدة لبدء التعديل
+        function editQuestion(i) {
+            editingIndex = i;
+            let q = tempQuestionList[i];
+            
+            // تعبئة الحقول
+            document.getElementById('new-q-text').value = q.t;
+            document.getElementById('new-q-passage').value = q.p || '';
+            q.o.forEach((opt, idx) => {
+                document.getElementById('new-q-o' + (idx+1)).value = opt;
+            });
+            document.getElementById('new-q-ans').value = q.a;
+            document.getElementById('new-q-skill').value = q.s;
+            document.getElementById('new-q-exp').value = q.e || ""; // تأكد من وجود قيمة
+            
+            updateLivePreview();
+            renderList(); // لتظليل السؤال الجاري تعديله
+
+            // تبديل الأزرار
+            document.getElementById('btn-add-q').style.display = 'none';
+            document.getElementById('btn-update-area').style.display = 'flex';
+            
+            // تمرير الشاشة للأعلى
+            document.getElementById('visual-editor-area').scrollIntoView({behavior: "smooth"});
+        }
+
+        // دالة حفظ التعديل
+        function saveEditedQuestion() {
+            if (editingIndex === -1) return;
+
+            let t = document.getElementById('new-q-text').value; 
+            let p = document.getElementById('new-q-passage').value;
+            let ans = document.getElementById('new-q-ans').value; 
+            
+            if(!t || !ans) return alert("الرجاء كتابة السؤال واختيار الإجابة"); 
+            
+            let q = { 
+                p: sanitizeHTML(p),
+                t: sanitizeHTML(t), 
+                o: [1,2,3,4].map(n=>sanitizeHTML(document.getElementById('new-q-o'+n).value)), 
+                a: parseInt(ans), 
+                s: document.getElementById('new-q-skill').value, 
+                e: document.getElementById('new-q-exp').value 
+            }; 
+            
+            // تحديث المصفوفة في نفس الموقع
+            tempQuestionList[editingIndex] = q;
+            
+            renderList();
+            cancelEditMode();
+            alert("تم تعديل السؤال بنجاح");
+        }
+
+        // دالة إلغاء التعديل
+        function cancelEditMode() {
+            editingIndex = -1;
+            
+            // تفريغ الحقول
+            document.getElementById('new-q-text').value = ''; 
+            document.getElementById('new-q-passage').value = '';
+            [1,2,3,4].forEach(n=>document.getElementById('new-q-o'+n).value = '');
+            document.getElementById('new-q-ans').value = '';
+            document.getElementById('new-q-skill').value = '';
+            document.getElementById('new-q-exp').value = '';
+            
+            updateLivePreview();
+            renderList(); // لإزالة التظليل
+
+            // إعادة الأزرار لوضعها الطبيعي
+            document.getElementById('btn-add-q').style.display = 'inline-block';
+            document.getElementById('btn-update-area').style.display = 'none';
+        }
+
         function toggleJsonMode() { let j = document.getElementById('json-editor-area'); let v = document.getElementById('visual-editor-area'); if (j.style.display === 'none' || !j.style.display) { j.style.display = 'block'; v.style.display = 'none'; document.getElementById('q-json-raw').value = JSON.stringify(tempQuestionList, null, 2); } else { j.style.display = 'none'; v.style.display = 'block'; } }
         function saveJsonToUI() { try { let d = JSON.parse(document.getElementById('q-json-raw').value); if(Array.isArray(d)) { tempQuestionList = d; renderList(); toggleJsonMode(); } } catch(e) { alert("JSON خطأ"); } }
         
@@ -1036,8 +1597,11 @@ async function adminLogin() {
                 for(let i=1; i<json.length; i++) {
                     let row = json[i];
                     if(row[0] && row[1]) {
-                        let name = String(row[0]).trim(); let id = String(row[1]).trim();
-                        studentsObj[id] = { name: name, id: id }; count++;
+                        let name = String(row[0]).trim(); 
+                        let id = normalizeID(row[1]); 
+                        if(id.length > 5) { 
+                            studentsObj[id] = { name: name, id: id }; count++;
+                        }
                     }
                 }
                 if(count > 0 && isOnline) {
@@ -1066,6 +1630,127 @@ async function adminLogin() {
                 db.ref(`school_data/students/${g}/${s}`).remove().then(() => { alert("تم الحذف"); viewClassDatabase(); });
             }
         }
+        
+        async function goToSubjects() { 
+            state.name = document.getElementById('sName').value; 
+            state.id = normalizeID(document.getElementById('sID').value); 
+            state.grade = document.getElementById('sGrade').value; 
+            state.section = document.getElementById('sSection').value; 
+            
+            if(!state.name || !state.grade || !state.id || !state.section) { alert("الرجاء إكمال جميع البيانات المطلوبة"); return; }
+            if(state.id.length < 10) { alert("⚠️ خطأ: رقم الهوية يجب أن يتكون من 10 أرقام أو أكثر."); return; }
+            
+            if (state.section === 'ج') {
+            } else {
+                if (!isOnline) { alert("يجب توفر الإنترنت للتحقق من الهوية"); return; }
+                document.getElementById('loading-overlay').style.display = 'flex';
+                
+                try {
+                    const snap = await db.ref(`school_data/students/${state.grade}/${state.section}`).once('value');
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    const studentsData = snap.val() || {};
+                    const registeredIDs = Object.keys(studentsData);
+                    
+                    if (!registeredIDs.includes(state.id)) {
+                        alert("⛔ عذراً، رقم الهوية غير مسجل في هذا الفصل.\nيرجى التأكد من الرقم أو مراجعة المعلم.");
+                        return; 
+                    }
+                    state.name = studentsData[state.id].name; 
+                } catch (err) {
+                    document.getElementById('loading-overlay').style.display = 'none';
+                    alert("حدث خطأ في الاتصال بقاعدة البيانات");
+                    return;
+                }
+            }
+            
+            let sciCard = document.getElementById('card-sci');
+            if (state.grade === '3') {
+                sciCard.style.display = 'none';
+            } else {
+                sciCard.style.display = '';
+            }
+
+            activeWeek = activeWeeksMap[state.grade] || 1; 
+            if(document.getElementById('subject-week-badge')) document.getElementById('subject-week-badge').innerText = "📅 أسبوع " + activeWeek;
+            nav('section-subjects');
+            checkSubjectStatus();
+        }
+
+        function fetchStudentsDetailed() {
+            if(!isOnline || !db) { alert("النظام غير متصل بالإنترنت"); return; }
+            let g = document.getElementById('st-grade').value; let s = document.getElementById('st-subject').value; let m = document.getElementById('st-model').value; let w = document.getElementById('st-week').value;
+            document.getElementById('loading-overlay').style.display='flex';
+            document.getElementById('missing-view').style.display = 'none';
+            db.ref('exam_results').once('value').then(snap => {
+                document.getElementById('loading-overlay').style.display='none';
+                let data = snap.val() || {}; let filtered = [];
+                Object.entries(data).forEach(([k, v]) => { if(v.grade == g && v.subject == s && v.model == m && v.week == w) { v.key = k; filtered.push(v); } });
+                if(filtered.length === 0) { alert(`لا توجد نتائج في الأسبوع ${w} لهذا النموذج`); return; }
+                document.getElementById('students-view').style.display='block';
+                filtered.sort((a,b) => (b.score||0) - (a.score||0));
+                calculatedStats = calculateStats(filtered);
+                printData = { type: 'grades', title: 'كشف رصد الدرجات', subtitle: `${subMap[s]} - ${gradeMap[g]} - نموذج ${modelMap[modelMap[m]] ? modelMap[m] : m} - أسبوع ${w}`, content: filtered, stats: calculatedStats };
+                let h = "";
+                filtered.forEach((st, i) => {
+                    let sc = st.score !== undefined ? st.score : 0; let tot = st.total !== undefined ? st.total : 0; let wrong = tot - sc;
+                    let percent = tot > 0 ? (sc / tot) * 100 : 0;
+                    let badgeClass = percent >= 80 ? 'g-high' : (percent >= 50 ? 'g-med' : 'g-low');
+                    let displayScore = `<div class="grade-badge ${badgeClass}">${toAr(sc)}</div>`;
+                    h += `<tr>
+                        <td>${toAr(i+1)}</td>
+                        <td style="text-align:right;">${st.name}</td>
+                        <td>${toAr(st.studentId||'-')}</td>
+                        <td style="font-weight:bold; color:var(--primary);">${st.section ? 'فصل '+st.section : '-'}</td>
+                        <td>${toAr(st.submissionTime||'-')}</td>
+                        <td>${toAr(st.timeTaken||'-')}</td>
+                        <td style="color:green; font-weight:bold;">${toAr(sc)}</td>
+                        <td style="color:red; font-weight:bold;">${toAr(wrong)}</td>
+                        <td>${displayScore}</td>
+                        <td>${st.level || '-'}</td>
+                        <td>
+                            <button onclick="editStudentID('${st.key}', '${st.studentId}')" style="color:blue;border:none;background:none;cursor:pointer;margin-left:5px;" title="تعديل الهوية"><i class="fas fa-pen"></i></button>
+                            <button onclick="del('${st.key}')" style="color:red;border:none;background:none;cursor:pointer;" title="حذف"><i class="fas fa-trash"></i></button>
+                        </td>
+                    </tr>`;
+                });
+                document.getElementById('students-detailed-body').innerHTML = h;
+            });
+        }
+        
+        function editStudentID(key, oldID) {
+            let newID = prompt("أدخل رقم الهوية الجديد:", oldID);
+            if(newID && newID.trim() !== "") {
+                newID = normalizeID(newID);
+                if(confirm("هل أنت متأكد من تغيير رقم الهوية إلى: " + newID + "؟")) {
+                    db.ref('exam_results/' + key).update({ studentId: newID }).then(() => {
+                        alert("تم التعديل بنجاح");
+                        fetchStudentsDetailed(); 
+                    });
+                }
+            }
+        }
+
+        // دالة لمقارنة الأسماء بشكل تقريبي
+        function isSimilarName(name1, name2) {
+            if(!name1 || !name2) return false;
+            // تقسيم الاسم إلى كلمات
+            let parts1 = name1.trim().replace(/\s+/g, ' ').split(' ');
+            let parts2 = name2.trim().replace(/\s+/g, ' ').split(' ');
+            
+            // يجب أن يتطابق مقطعان على الأقل (مثلاً الاسم الأول والأب)
+            // نتجاهل الكلمات القصيرة جداً (أقل من حرفين) لتجنب الأخطاء مع ال التعريف أو الحروف
+            parts1 = parts1.filter(p => p.length > 2);
+            parts2 = parts2.filter(p => p.length > 2);
+
+            let matches = 0;
+            parts1.forEach(p1 => {
+                if (parts2.some(p2 => p2.includes(p1) || p1.includes(p2))) {
+                    matches++;
+                }
+            });
+
+            return matches >= 2;
+        }
 
         function checkMissingFromDB() {
             if(!isOnline || !db) { alert("النظام غير متصل بالإنترنت"); return; }
@@ -1079,23 +1764,163 @@ async function adminLogin() {
                 });
                 if(allRegisteredStudents.length === 0) { document.getElementById('loading-overlay').style.display='none'; alert("⚠️ لا توجد قاعدة بيانات طلاب لهذا الصف."); return; }
                 db.ref('exam_results').once('value').then(resSnap => {
-                    let takenIDs = []; let resData = resSnap.val() || {};
-                    Object.values(resData).forEach(r => { if(r.grade == g && r.subject == subject && r.model == model && r.week == week) { takenIDs.push(String(r.studentId).trim()); } });
+                    let takenIDs = []; 
+                    let takenNames = []; // قائمة بأسماء الطلاب الذين اختبروا
+                    let resData = resSnap.val() || {};
+                    Object.values(resData).forEach(r => { 
+                        if(r.grade == g && r.subject == subject && r.model == model && r.week == week) { 
+                            takenIDs.push(normalizeID(r.studentId)); 
+                            takenNames.push(r.name); // حفظ الاسم للمقارنة
+                        } 
+                    });
+                    
                     let missingStudents = [];
-                    allRegisteredStudents.forEach(st => { if(!takenIDs.includes(String(st.id).trim())) { missingStudents.push(st); } });
+                    allRegisteredStudents.forEach(st => { 
+                        if(!takenIDs.includes(normalizeID(st.id))) { 
+                            // إذا لم يختبر برقم الهوية، نتحقق من الاسم
+                            if (isSimilarName(st.name, takenNames.find(n => isSimilarName(st.name, n)))) {
+                                st.isSuspected = true; // علامة بأنه محتمل الحضور
+                            }
+                            missingStudents.push(st); 
+                        } 
+                    });
+                    
                     document.getElementById('loading-overlay').style.display='none'; document.getElementById('students-view').style.display='none'; document.getElementById('missing-view').style.display='block';
                     printData = { type: 'missing', title: 'تقرير الطلاب الغائبين عن الاختبار', subtitle: `${subMap[subject]} - ${gradeMap[g]} - نموذج ${modelMap[model]} - أسبوع ${week}`, content: missingStudents };
                     let h = "";
                     if(missingStudents.length === 0) { h = "<tr><td colspan='5' style='color:green; font-weight:bold;'>🎉 ممتاز! جميع الطلاب المسجلين في القاعدة أدوا الاختبار.</td></tr>"; } 
                     else {
-                        missingStudents.forEach((st, i) => { h += `<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.id)}</td><td>${st.section}</td><td style="color:#c0392b; font-weight:bold;">غائب</td></tr>`; });
+                        missingStudents.forEach((st, i) => { 
+                            let rowStyle = st.isSuspected ? "background-color: #d4edda; color: #155724;" : "";
+                            let statusText = st.isSuspected ? "محتمل حضوره (تشابه أسماء)" : "غائب";
+                            h += `<tr style="${rowStyle}">
+                                <td>${toAr(i+1)}</td>
+                                <td style="text-align:right;">${st.name}</td>
+                                <td>${toAr(st.id)}</td>
+                                <td>${st.section}</td>
+                                <td style="font-weight:bold;">${statusText}</td>
+                            </tr>`; 
+                        });
                     }
                     document.getElementById('missing-body').innerHTML = h;
                 });
             });
         }
 
-        function printFormalExam(withAnswers) {
+        
+        // =========================
+        // إعدادات العنوان والتذييل
+        // =========================
+        function getDefaultExamMeta() {
+            return {
+                title: "",
+                subline: "",
+                footerRightLabel: "معد الأسئلة",
+                footerRightName: "لجنة التميز",
+                footerLeftLabel: "مدير المدرسة",
+                footerLeftName: "أحمد سالم الشهري"
+            };
+        }
+
+        function getExamMeta() {
+            let v = getDefaultExamMeta();
+            try {
+                const raw = localStorage.getItem('examMeta');
+                if(raw) {
+                    const obj = JSON.parse(raw);
+                    v = { ...v, ...obj };
+                }
+            } catch(e) { console.log(e); }
+            return v;
+        }
+
+        function applyMetaToStaticAreas(meta) {
+            // رسمي (الطباعة)
+            const fRLabel = document.getElementById('f-footer-right-label');
+            const fRName  = document.getElementById('f-footer-right-name');
+            const fLLabel = document.getElementById('f-footer-left-label');
+            const fLName  = document.getElementById('f-footer-left-name');
+            if(fRLabel) fRLabel.innerText = meta.footerRightLabel;
+            if(fRName)  fRName.innerText  = meta.footerRightName;
+            if(fLLabel) fLLabel.innerText = meta.footerLeftLabel;
+            if(fLName)  fLName.innerText  = meta.footerLeftName;
+
+            // معاينة طباعة المحتوى (print-view)
+            const pvRLabel = document.getElementById('pv-footer-right-label');
+            const pvRName  = document.getElementById('pv-footer-right-name');
+            const pvLLabel = document.getElementById('pv-footer-left-label');
+            const pvLName  = document.getElementById('pv-footer-left-name');
+            if(pvRLabel) pvRLabel.innerText = meta.footerRightLabel;
+            if(pvRName)  pvRName.innerText  = meta.footerRightName;
+            if(pvLLabel) pvLLabel.innerText = meta.footerLeftLabel;
+            if(pvLName)  pvLName.innerText  = meta.footerLeftName;
+        }
+
+        function openMetaEditor() {
+            const meta = getExamMeta();
+            document.getElementById('meta-title').value = meta.title || "";
+            document.getElementById('meta-subline').value = meta.subline || "";
+            document.getElementById('meta-footer-right').value = meta.footerRightLabel || "";
+            document.getElementById('meta-footer-right-name').value = meta.footerRightName || "";
+            document.getElementById('meta-footer-left').value = meta.footerLeftLabel || "";
+            document.getElementById('meta-footer-left-name').value = meta.footerLeftName || "";
+
+            document.getElementById('metaEditorModal').style.display = 'block';
+        }
+
+        function closeMetaEditor() {
+            document.getElementById('metaEditorModal').style.display = 'none';
+        }
+
+        function saveExamMeta() {
+            const meta = {
+                title: document.getElementById('meta-title').value.trim(),
+                subline: document.getElementById('meta-subline').value.trim(),
+                footerRightLabel: document.getElementById('meta-footer-right').value.trim() || "معد الأسئلة",
+                footerRightName: document.getElementById('meta-footer-right-name').value.trim() || "لجنة التميز",
+                footerLeftLabel: document.getElementById('meta-footer-left').value.trim() || "مدير المدرسة",
+                footerLeftName: document.getElementById('meta-footer-left-name').value.trim() || "أحمد سالم الشهري"
+            };
+
+            localStorage.setItem('examMeta', JSON.stringify(meta));
+            applyMetaToStaticAreas(meta);
+            // تثبيت الصف المختار في النموذج الرسمي
+            try{
+                const gradeEl = document.getElementById('f-grade');
+                if(gradeEl) gradeEl.innerText = gradeText || '';
+            }catch(e){}
+
+            // مزامنة على قاعدة البيانات إن وجدت
+            try {
+                if(isOnline && db) db.ref('settings/examMeta').set(meta);
+            } catch(e) { console.log(e); }
+
+            alert("تم حفظ بيانات العنوان والتذييل ✅\n(إذا كنت داخل المعاينة: أعد الضغط على زر الطباعة لتحديث العنوان.)");
+            closeMetaEditor();
+        }
+
+        function resetExamMeta() {
+            localStorage.removeItem('examMeta');
+            const meta = getDefaultExamMeta();
+            applyMetaToStaticAreas(meta);
+            try { if(isOnline && db) db.ref('settings/examMeta').set(meta); } catch(e) {}
+            alert("تمت إعادة الضبط ✅");
+        }
+
+        async function loadExamMetaFromDBIfAvailable() {
+            try {
+                if(isOnline && db) {
+                    const snap = await db.ref('settings/examMeta').once('value');
+                    const v = snap.val();
+                    if(v && typeof v === 'object') {
+                        localStorage.setItem('examMeta', JSON.stringify({ ...getDefaultExamMeta(), ...v }));
+                    }
+                }
+            } catch(e) { console.log(e); }
+            applyMetaToStaticAreas(getExamMeta());
+        }
+
+function printFormalExam(withAnswers) {
             if(!tempQuestionList.length) return alert("لا توجد أسئلة");
             let qHtml = "", ansHtml = "";
             let showInd = document.getElementById('chk-print-indicators').checked;
@@ -1105,19 +1930,24 @@ async function adminLogin() {
             let wmHtml = "";
             for(let i=0; i<6; i++) { wmHtml += `<div class="watermark-item">${watermarkText}</div>`; }
             document.getElementById('watermark-layer').innerHTML = wmHtml;
-            document.getElementById('f-exam-title').innerText = withAnswers ? "اختبار نافس (نموذج الإجابة)" : "اختبار نافس";
-            document.getElementById('f-exam-subtitle').innerText = `${subMap[s]} - ${gradeText} - ${modelMap[m]} - الأسبوع ${w}`;
+            const meta = getExamMeta();
+            const defaultTitle = withAnswers ? "اختبار نافس (نموذج الإجابة)" : "اختبار نافس";
+            document.getElementById('f-exam-title').innerText = (meta.title && meta.title.length) ? meta.title : defaultTitle;
+            const defaultSub = `${subMap[s]} - ${gradeText} - ${modelMap[m]} - الأسبوع ${w}`;
+            document.getElementById('f-exam-subtitle').innerText = (meta.subline && meta.subline.length) ? meta.subline : defaultSub;
+            applyMetaToStaticAreas(meta);
             tempQuestionList.forEach((q, i) => {
                 let txt = formatMath(smartFixMath(q.t));
                 let num = toAr(i + 1);
                 let indHtml = showInd && q.s ? `<div class="f-indicator-badge">${q.s}</div>` : "";
+                let passageHtml = q.p ? `<div style="background:#f9f9f9; padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:5px; text-align:justify; line-height:1.8; font-family:'Times New Roman'; font-size:14pt;">${formatMath(smartFixMath(q.p))}</div>` : "";
                 let optionsHtml = q.o.map((x, idx) => {
                     let optText = formatMath(smartFixMath(x));
                     let isCorrect = (withAnswers && idx === q.a);
                     let correctClass = isCorrect ? "f-correct-option" : "";
                     return `<div class="f-option ${correctClass}">(${['أ','ب','ج','د'][idx]}) ${optText}</div>`;
                 }).join('');
-                qHtml += `<div class="f-question-block">${indHtml}<div class="f-q-text"><span class="f-q-number">${num}</span><div style="width:100%">${txt}</div></div><div class="f-options-grid opts-4col">${optionsHtml}</div></div>`;
+                qHtml += `<div class="f-question-block">${passageHtml}${indHtml}<div class="f-q-text"><span class="f-q-number">${num}</span><div style="width:100%">${txt}</div></div><div class="f-options-grid opts-4col">${optionsHtml}</div></div>`;
                 ansHtml += `<tr><td>${num}</td><td>(${['أ','ب','ج','د'][q.a]})</td><td>${q.s||'-'}</td></tr>`;
             });
             document.getElementById('formal-questions-body').innerHTML = qHtml;
@@ -1125,13 +1955,26 @@ async function adminLogin() {
             if(cachedLogos.ministry) document.getElementById('f-logo-right').src = cachedLogos.ministry;
             if(cachedLogos.vision) document.getElementById('f-logo-left').src = cachedLogos.vision;
             document.body.classList.add('printing-formal');
-            setTimeout(() => { if(window.MathJax) MathJax.typesetPromise().then(() => { window.print(); setTimeout(()=>document.body.classList.remove('printing-formal'),1000); }); }, 500);
+            
+            // Safe timeout with check
+            setTimeout(() => { 
+                if(window.MathJax && typeof MathJax.typesetPromise === 'function') {
+                    MathJax.typesetPromise().then(() => { 
+                        window.print(); 
+                        setTimeout(()=>document.body.classList.remove('printing-formal'),1000); 
+                    }); 
+                } else {
+                    window.print();
+                    setTimeout(()=>document.body.classList.remove('printing-formal'),1000);
+                }
+            }, 500);
         }
 
         function saveQuestionsToDB() { if(!isOnline) return alert("لا يوجد اتصال"); let s = document.getElementById('q-subject').value, g = document.getElementById('q-grade').value, w = document.getElementById('q-week').value, m = document.getElementById('q-model').value; db.ref(`questions/${s}/g${g}/w${w}/t${m}`).set(tempQuestionList).then(()=>alert("تم الحفظ")); }
         function loadQuestionsForEdit() { if(!isOnline) return alert("لا يوجد اتصال"); let s = document.getElementById('q-subject').value, g = document.getElementById('q-grade').value, w = document.getElementById('q-week').value, m = document.getElementById('q-model').value; db.ref(`questions/${s}/g${g}/w${w}/t${m}`).once('value').then(snap => { tempQuestionList = snap.val() || []; renderList(); alert(tempQuestionList.length ? "تم التحميل" : "لا توجد أسئلة"); }); }
         function importQuestionsFromExcel(input) { let file = input.files[0]; if(!file) return; let reader = new FileReader(); reader.onload = e => { let wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'}); let json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], {header: 1}); for(let i=1; i<json.length; i++) { let r = json[i]; if(r[0]) tempQuestionList.push({ t: sanitizeHTML(r[0]), o: [r[1],r[2],r[3],r[4]].map(sanitizeHTML), a: (r[5]||1)-1, s: r[6]||"", e: r[7]||"" }); } renderList(); }; reader.readAsArrayBuffer(file); }
-function analyzeLoss() {
+        
+        function analyzeLoss() {
             if(!isOnline || !db) { alert("تأكد من اتصالك بالإنترنت"); return; }
             let g = document.getElementById('an-grade').value; let s = document.getElementById('an-subject').value; let m = document.getElementById('an-model').value; let w = document.getElementById('an-week').value;
             document.getElementById('loading-overlay').style.display='flex'; document.getElementById('loss-analysis-view').style.display='none';
@@ -1140,7 +1983,7 @@ function analyzeLoss() {
                     document.getElementById('loading-overlay').style.display='none';
                     let all = Object.values(snap.val()||{});
                     let filtered = all.filter(r => r.grade == g && r.subject == s && r.model == m && r.week == w);
-                    if(filtered.length === 0) { alert(`لا توجد نتائج مسجلة في الأسبوع ${w}. تأكد من الفلتر.`); return; }
+                    if(filtered.length === 0) { alert(`لا توجد نتائج مسجلة في الأسبوع ${w} لهذا النموذج. تأكد من الفلتر.`); return; }
                     document.getElementById('loss-analysis-view').style.display='block';
                     let skillCounts = {}; let levelsCount = { "متقدم 🌟": 0, "متوسط 👍": 0, "يحتاج تحسين 🚀": 0 };
                     filtered.forEach(r => { 
@@ -1153,12 +1996,15 @@ function analyzeLoss() {
                     let h = "";
                     skillsArr.forEach(sk => { let rowColor = sk.percent >= 50 ? "background-color:#ffebee;" : ""; let action = sk.percent >= 50 ? "⚠️ خطة علاجية" : "دعم وإثراء"; h += `<tr style="${rowColor}"><td>${sk.name}</td><td>${toAr(sk.count)}</td><td>%${toAr(sk.percent)}</td><td style="font-weight:bold; color:${sk.percent>=50?'red':'green'}">${action}</td></tr>`; });
                     document.getElementById('skills-list-body').innerHTML = h || "<tr><td colspan='4'>لا يوجد فاقد مهاري</td></tr>";
+                    
                     if(window.skillsChart instanceof Chart) window.skillsChart.destroy();
                     let ctx1 = document.getElementById('skillsChart').getContext('2d');
                     window.skillsChart = new Chart(ctx1, { type: 'bar', data: { labels: skillsArr.map(x => x.name.length > 20 ? x.name.substring(0, 20) + '...' : x.name), datasets: [{ label: 'الطلاب المخفقين', data: skillsArr.map(x => x.count), backgroundColor: skillsArr.map(x => x.percent >= 50 ? '#c0392b' : '#f1c40f') }] }, options: { animation: false, responsive: true, maintainAspectRatio: false } });
+                    
                     if(window.levelsChart instanceof Chart) window.levelsChart.destroy();
                     let ctx2 = document.getElementById('levelsChart').getContext('2d');
                     window.levelsChart = new Chart(ctx2, { type: 'doughnut', data: { labels: Object.keys(levelsCount), datasets: [{ data: Object.values(levelsCount), backgroundColor: ['#27ae60', '#f39c12', '#c0392b'] }] }, options: { animation: false, responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' }, title: { display: true, text: 'توزيع مستويات الطلاب' } } } });
+                    
                     document.getElementById('loss-analysis-view').scrollIntoView({ behavior: 'smooth' });
                 } catch(err) { console.error("Error in analysis:", err); alert("حدث خطأ غير متوقع."); }
             }).catch(err => { console.error(err); document.getElementById('loading-overlay').style.display='none'; alert("تعذر الاتصال بقاعدة البيانات."); });
@@ -1185,92 +2031,149 @@ function analyzeLoss() {
                 options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { title: {display: true, text: 'المنحنى البياني لتوزيع درجات الطلاب'} }, scales: { y: { beginAtZero: true, title: {display:true, text: 'عدد الطلاب'} }, x: { title: {display:true, text: 'الدرجة'} } } }
             });
         }
-
-        function fetchStudentsDetailed() {
-            if(!isOnline || !db) { alert("النظام غير متصل بالإنترنت"); return; }
-            let g = document.getElementById('st-grade').value; let s = document.getElementById('st-subject').value; let m = document.getElementById('st-model').value; let w = document.getElementById('st-week').value;
-            document.getElementById('loading-overlay').style.display='flex';
-            document.getElementById('missing-view').style.display = 'none';
-            db.ref('exam_results').once('value').then(snap => {
-                document.getElementById('loading-overlay').style.display='none';
-                let data = snap.val() || {}; let filtered = [];
-                Object.entries(data).forEach(([k, v]) => { if(v.grade == g && v.subject == s && v.model == m && v.week == w) { v.key = k; filtered.push(v); } });
-                if(filtered.length === 0) { alert(`لا توجد نتائج في الأسبوع ${w} لهذا النموذج`); return; }
-                document.getElementById('students-view').style.display='block';
-                filtered.sort((a,b) => (b.score||0) - (a.score||0));
-                calculatedStats = calculateStats(filtered);
-                printData = { type: 'grades', title: 'كشف رصد الدرجات', subtitle: `${subMap[s]} - ${gradeMap[g]} - نموذج ${modelMap[m]} - أسبوع ${w}`, content: filtered, stats: calculatedStats };
-                let h = "";
-                filtered.forEach((st, i) => {
-                    let sc = st.score !== undefined ? st.score : 0; let tot = st.total !== undefined ? st.total : 0; let wrong = tot - sc;
-                    let percent = tot > 0 ? (sc / tot) * 100 : 0;
-                    let badgeClass = percent >= 80 ? 'g-high' : (percent >= 50 ? 'g-med' : 'g-low');
-                    let displayScore = `<div class="grade-badge ${badgeClass}">${toAr(sc)}</div>`;
-                    h += `<tr>
-                        <td>${toAr(i+1)}</td>
-                        <td style="text-align:right;">${st.name}</td>
-                        <td>${toAr(st.studentId||'-')}</td>
-                        <td style="font-weight:bold; color:var(--primary);">${st.section ? 'فصل '+st.section : '-'}</td>
-                        <td>${toAr(st.submissionTime||'-')}</td>
-                        <td>${toAr(st.timeTaken||'-')}</td>
-                        <td style="color:green; font-weight:bold;">${toAr(sc)}</td>
-                        <td style="color:red; font-weight:bold;">${toAr(wrong)}</td>
-                        <td>${displayScore}</td>
-                        <td>${st.level || '-'}</td>
-                        <td><button onclick="del('${st.key}')" style="color:red;border:none;background:none;cursor:pointer;">❌</button></td>
-                    </tr>`;
-                });
-                document.getElementById('students-detailed-body').innerHTML = h;
-            });
-        }
-        
         function toggleExam(k) { if(isOnline) db.ref('settings/'+k).set(document.getElementById('toggle-'+k).checked); }
         function saveWeekForGrade(grade, weekVal) { if(isOnline) { activeWeeksMap[grade] = parseInt(weekVal); db.ref('settings/activeWeeks/' + grade).set(parseInt(weekVal)); } }
         function saveTimerSettings() { if(isOnline) { db.ref('settings/timerEnabled').set(document.getElementById('toggle-timer').checked); db.ref('settings/timerDuration').set(document.getElementById('timer-duration-input').value); } }
         function uploadLogo(t, i) { let r = new FileReader(); r.onload = e => { document.getElementById('preview-'+t).src = e.target.result; if(isOnline) db.ref('settings/logos/'+t).set(e.target.result); }; if(i.files[0]) r.readAsDataURL(i.files[0]); }
         function del(k) { if(confirm("هل أنت متأكد من حذف هذا السجل؟")) db.ref('exam_results/'+k).remove().then(()=>fetchStudentsDetailed()); }
         
-        function printReport(mode) {
+        async function printReport(mode) {
             if(!printData) return alert("الرجاء عرض البيانات أولاً بالضغط على زر العرض.");
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
             document.getElementById('print-doc-title').innerText = printData.title; 
             document.getElementById('print-doc-subtitle').innerText = printData.subtitle;
             if(cachedLogos.ministry) document.getElementById('print-logo-right').src = cachedLogos.ministry;
             if(cachedLogos.vision) document.getElementById('print-logo-left').src = cachedLogos.vision;
+            
             document.getElementById('print-stats-row').style.display = 'none';
             document.getElementById('print-loss-charts').style.display = 'none';
+            
             if(mode === 'grades' && printData.stats) {
                 let st = printData.stats;
                 document.getElementById('print-stats-row').style.display = 'flex';
                 document.getElementById('print-stats-area').innerHTML = `<div class="stat-card"><div class="stat-val">${toAr(st.avg.toFixed(1))}</div><div class="stat-label">المتوسط الحسابي</div></div><div class="stat-card"><div class="stat-val">%${toAr(st.passRate.toFixed(0))}</div><div class="stat-label">نسبة النجاح</div></div><div class="stat-card"><div class="stat-val">${toAr(st.max)}</div><div class="stat-label">أعلى درجة</div></div><div class="stat-card"><div class="stat-val">${toAr(st.min)}</div><div class="stat-label">أقل درجة</div></div><div class="stat-card"><div class="stat-val">${toAr(st.stdDev.toFixed(2))}</div><div class="stat-label">الانحراف المعياري</div></div>`;
+                
                 let tempCtx = document.getElementById('tempBellCurveCanvas').getContext('2d');
                 if(window.tempChartInstance) window.tempChartInstance.destroy();
                 window.tempChartInstance = renderBellCurve(tempCtx, st);
-                setTimeout(() => { document.getElementById('printBellCurveImg').src = window.tempChartInstance.toBase64Image(); buildPrintTable(mode); triggerPrint(); }, 500); 
-            } else if (mode === 'missing') {
-                setTimeout(() => { buildPrintTable(mode); triggerPrint(); }, 300);
-            } else {
+                
+                window.tempChartInstance.update();
+                await new Promise(r => setTimeout(r, 800)); 
+                document.getElementById('printBellCurveImg').src = window.tempChartInstance.toBase64Image();
+                
+            } else if (mode === 'loss') {
                 document.getElementById('print-loss-charts').style.display = 'flex';
-                if(window.skillsChart) document.getElementById('printSkillsImg').src = window.skillsChart.toBase64Image();
-                if(window.levelsChart) document.getElementById('printLevelsImg').src = window.levelsChart.toBase64Image();
-                setTimeout(() => { buildPrintTable(mode); triggerPrint(); }, 300);
+                if(window.skillsChart) { window.skillsChart.update(); await new Promise(r => setTimeout(r, 400)); document.getElementById('printSkillsImg').src = window.skillsChart.toBase64Image(); }
+                if(window.levelsChart) { window.levelsChart.update(); await new Promise(r => setTimeout(r, 400)); document.getElementById('printLevelsImg').src = window.levelsChart.toBase64Image(); }
+                await new Promise(r => setTimeout(r, 800));
+            }
+
+            buildPrintTable(mode);
+            document.getElementById('loading-overlay').style.display = 'none';
+            triggerPrint();
+        }
+
+        async function saveReportPDF(mode) {
+            if(!printData) return alert("الرجاء عرض البيانات أولاً.");
+            document.getElementById('loading-overlay').style.display = 'flex';
+            
+            const renderDiv = document.getElementById('pdf-render-container');
+            renderDiv.innerHTML = ''; // Clear previous
+            
+            let logoRight = cachedLogos.ministry || ""; 
+            let logoLeft = cachedLogos.vision || "";
+            
+            let header = `
+                <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:3px double #000; padding-bottom:10px; margin-bottom:20px; width:100%;">
+                    <img src="${logoRight}" style="height:80px; object-fit:contain;">
+                    <div style="text-align:center; flex:1;">
+                        <div style="font-size:12px;">المملكة العربية السعودية - وزارة التعليم</div>
+                        <h2 style="margin:5px 0; font-family:'Amiri', serif;">ابتدائية ومتوسطة الراشدون بالمربع</h2>
+                    </div>
+                    <img src="${logoLeft}" style="height:80px; object-fit:contain;">
+                </div>
+                <div style="text-align:center; margin-bottom:25px;">
+                    <h1 style="text-decoration:underline; font-size:24px;">${printData.title}</h1>
+                    <h3 style="font-size:18px;">${printData.subtitle}</h3>
+                </div>`;
+                
+            let chartsHtml = "";
+            if(mode === 'grades' && printData.stats) {
+                let st = printData.stats;
+                chartsHtml = `
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom:20px; text-align:center;">
+                        <div style="border:1px solid #000; padding:10px; border-radius:8px;"><b>المتوسط:</b> ${toAr(st.avg.toFixed(1))}</div>
+                        <div style="border:1px solid #000; padding:10px; border-radius:8px;"><b>النجاح:</b> %${toAr(st.passRate.toFixed(0))}</div>
+                        <div style="border:1px solid #000; padding:10px; border-radius:8px;"><b>العدد:</b> ${toAr(st.totalStudents)}</div>
+                    </div>
+                    <div style="text-align:center; margin-bottom:20px; border:1px solid #eee; padding:10px;">
+                        <img id="pdf-chart-bell-img" style="max-width:100%; height:280px; object-fit:contain;">
+                    </div>`;
+            } else if (mode === 'loss') {
+                chartsHtml = `
+                    <div style="display:flex; justify-content:space-between; gap:15px; margin-bottom:20px;">
+                        <div style="flex:1; border:1px solid #eee; padding:5px;"><img id="pdf-chart-skills-img" style="width:100%; height:200px; object-fit:contain;"></div>
+                        <div style="flex:1; border:1px solid #eee; padding:5px;"><img id="pdf-chart-levels-img" style="width:100%; height:200px; object-fit:contain;"></div>
+                    </div>`;
+            }
+            
+            buildPrintTable(mode); 
+            let tableHtml = document.getElementById('print-content-body').innerHTML;
+            let footer = `
+                <div style="margin-top:40px; display:flex; justify-content:space-between; font-weight:bold; border-top:2px solid #000; padding-top:10px;">
+                    <div>معد التقارير: لجنة التميز</div>
+                    <div>مدير المدرسة: أ. أحمد سالم الشهري</div>
+                </div>`;
+            
+            renderDiv.innerHTML = header + chartsHtml + tableHtml + footer;
+            
+            // Set chart images from Base64
+            if(mode === 'grades' && window.tempChartInstance) {
+                renderDiv.querySelector('#pdf-chart-bell-img').src = window.tempChartInstance.toBase64Image();
+            } else if (mode === 'loss') {
+                if(window.skillsChart) renderDiv.querySelector('#pdf-chart-skills-img').src = window.skillsChart.toBase64Image();
+                if(window.levelsChart) renderDiv.querySelector('#pdf-chart-levels-img').src = window.levelsChart.toBase64Image();
+            }
+            
+            // Critical wait for mobile
+            await new Promise(r => setTimeout(r, 1500));
+            
+            try {
+                const opt = {
+                    margin: [0.3, 0.3, 0.3, 0.3],
+                    filename: `${printData.title.replace(/ /g,'_')}.pdf`,
+                    image: { type: 'jpeg', quality: 0.98 },
+                    html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 },
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                };
+                
+                await html2pdf().set(opt).from(renderDiv).save();
+                renderDiv.innerHTML = ''; // Clean up
+            } catch(err) {
+                console.error(err);
+                alert("فشل إنشاء PDF. يرجى المحاولة من متصفح آخر.");
+            } finally {
+                document.getElementById('loading-overlay').style.display = 'none';
             }
         }
 
         function buildPrintTable(mode) {
             let h = "";
             if(mode === 'grades') {
-                h = `<table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:11pt;"><thead><tr style="background:#eee;"><th style="width:5%;">م</th><th style="width:20%;">الاسم</th><th style="width:12%;">الهوية</th><th style="width:8%;">الفصل</th><th style="width:10%;">وقت التسليم</th><th style="width:10%;">المدة</th><th style="width:8%;">صحيحة ✅</th><th style="width:8%;">خاطئة ❌</th><th style="width:9%;">الدرجة</th><th style="width:10%;">المستوى</th></tr></thead><tbody>`;
+                h = `<table style="width:100%; border-collapse:collapse; margin-top:5px; font-size:10pt;"><thead><tr style="background:#f2f2f2;"><th style="border:1px solid #000; padding:5px;">م</th><th style="border:1px solid #000; padding:5px;">الاسم</th><th style="border:1px solid #000; padding:5px;">الهوية</th><th style="border:1px solid #000; padding:5px;">الفصل</th><th style="border:1px solid #000; padding:5px;">الدرجة</th><th style="border:1px solid #000; padding:5px;">المستوى</th></tr></thead><tbody>`;
                 printData.content.forEach((st,i)=> { 
-                    let score = st.score || 0; let total = st.total || 0; let wrong = total - score; 
-                    let scoreStyle = "font-size:16pt; font-weight:bold;";
-                    h+=`<tr><td>${toAr(i+1)}</td><td style="text-align:right;">${st.name}</td><td>${toAr(st.studentId||'')}</td><td>${st.section || '-'}</td><td>${toAr(st.submissionTime||'-')}</td><td>${toAr(st.timeTaken||'-')}</td><td>${toAr(score)}</td><td>${toAr(wrong)}</td><td style="${scoreStyle}">${toAr(score)} / ${toAr(total)}</td><td>${st.level||'-'}</td></tr>`; 
+                    let score = st.score || 0; let total = st.total || 0;
+                    h+=`<tr><td style="border:1px solid #000; padding:5px; text-align:center;">${toAr(i+1)}</td><td style="border:1px solid #000; padding:5px;">${st.name}</td><td style="border:1px solid #000; padding:5px; text-align:center;">${toAr(st.studentId||'')}</td><td style="border:1px solid #000; padding:5px; text-align:center;">${st.section || '-'}</td><td style="border:1px solid #000; padding:5px; text-align:center; font-weight:bold;">${toAr(score)} / ${toAr(total)}</td><td style="border:1px solid #000; padding:5px; text-align:center;">${st.level||'-'}</td></tr>`; 
                 });
             } else if (mode === 'missing') {
-                h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#c0392b; color:white;"><th style="width:10%;">م</th><th style="width:40%;">اسم الطالب</th><th style="width:30%;">رقم الهوية</th><th style="width:20%;">الفصل</th></tr></thead><tbody>`;
-                printData.content.forEach((st, i) => { h += `<tr><td>${toAr(i+1)}</td><td>${st.name}</td><td>${toAr(st.id)}</td><td>${st.section}</td></tr>`; });
+                h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#c0392b; color:white;"><th style="border:1px solid #000; padding:8px;">م</th><th style="border:1px solid #000; padding:8px;">اسم الطالب</th><th style="border:1px solid #000; padding:8px;">رقم الهوية</th><th style="border:1px solid #000; padding:8px;">الفصل</th></tr></thead><tbody>`;
+                printData.content.forEach((st, i) => { 
+                    h += `<tr><td style="border:1px solid #000; padding:8px; text-align:center;">${toAr(i+1)}</td><td style="border:1px solid #000; padding:8px;">${st.name}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${toAr(st.id)}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${st.section}</td></tr>`; 
+                });
             } else {
-                h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#eee;"><th style="width:40%;">المهارة</th><th style="width:20%;">عدد الطلاب المخفقين</th><th style="width:20%;">النسبة</th><th style="width:20%;">التوصية</th></tr></thead><tbody>`;
-                printData.content.forEach(sk=> h+=`<tr><td>${sk.name}</td><td>${toAr(sk.count)}</td><td>%${toAr(sk.percent)}</td><td>${sk.percent>50?"خطة علاجية":"دعم"}</td></tr>`);
+                h = `<table style="width:100%; border-collapse:collapse; margin-top:20px;"><thead><tr style="background:#f2f2f2;"><th style="border:1px solid #000; padding:8px;">المهارة</th><th style="border:1px solid #000; padding:8px;">العدد</th><th style="border:1px solid #000; padding:8px;">النسبة</th><th style="border:1px solid #000; padding:8px;">التوصية</th></tr></thead><tbody>`;
+                printData.content.forEach(sk=> h+=`<tr><td style="border:1px solid #000; padding:8px;">${sk.name}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${toAr(sk.count)}</td><td style="border:1px solid #000; padding:8px; text-align:center;">%${toAr(sk.percent)}</td><td style="border:1px solid #000; padding:8px; text-align:center;">${sk.percent>50?"خطة علاجية":"دعم"}</td></tr>`);
             }
             h += `</tbody></table>`; 
             document.getElementById('print-content-body').innerHTML = h;
@@ -1291,47 +2194,31 @@ function analyzeLoss() {
                 let headers = [[{v: "المملكة العربية السعودية", s: {font: {bold: true}, alignment: {horizontal: "center"}}}], [{v: "وزارة التعليم", s: {font: {bold: true}, alignment: {horizontal: "center"}}}], [{v: "الإدارة العامة للتعليم بمنطقة عسير", s: {font: {bold: true}, alignment: {horizontal: "center"}}}], [{v: "ابتدائية ومتوسطة الراشدون بالمربع", s: {font: {bold: true, color: {rgb: "006266"}}, alignment: {horizontal: "center"}}}], [], [{v: printData.title + " - " + printData.subtitle, s: {font: {bold: true, sz: 14}, alignment: {horizontal: "center"}, fill: {fgColor: {rgb: "EEEEEE"}}}}], []];
                 let tableHead = [], dataRows = [], colWidths = [];
                 if(printData.type === 'missing') {
-                    tableHead = [{v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "الحالة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}];
-                    dataRows = printData.content.map((st, i) => { let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}}; return [{v: i+1, s: cellStyle}, {v: st.name, s: cellStyle}, {v: st.id, s: cellStyle}, {v: st.section, s: cellStyle}, {v: "لم يختبر", s: {...cellStyle, font: {color: {rgb: "C0392B"}, bold:true}}}]; });
-                    colWidths = [{wch: 5}, {wch: 30}, {wch: 15}, {wch: 10}, {wch: 15}];
+                    tableHead = [{v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}, {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "C0392B"}}, alignment: {horizontal: "center"}}}];
+                    dataRows = printData.content.map((st, i) => { 
+                        let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}}; 
+                        return [{v: i+1, s: cellStyle}, {v: st.name, s: cellStyle}, {v: st.id, s: cellStyle}, {v: st.section, s: cellStyle}]; 
+                    });
+                    colWidths = [{wch: 5}, {wch: 30}, {wch: 15}, {wch: 10}];
                 } else {
-                    tableHead = [{v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "وقت التسليم", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الوقت المستغرق", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "صحيحة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "خاطئة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الدرجة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الدرجة الكلية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "المستوى", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "المهارات المفقودة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}];
-                    dataRows = printData.content.map((st, i) => { let score = parseInt(st.score) || 0; let total = parseInt(st.total) || 0; let wrong = total - score; let missedText = Array.isArray(st.missed) ? st.missed.join(" - ") : String(st.missed||""); let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}}; return [{v: i+1, s: cellStyle}, {v: st.name || "بدون اسم", s: cellStyle}, {v: st.studentId || "-", s: cellStyle}, {v: st.section || "-", s: cellStyle}, {v: st.submissionTime || "-", s: cellStyle}, {v: st.timeTaken || "-", s: cellStyle}, {v: score, s: {...cellStyle, font: {color: {rgb: "008000"}}, numFmt: "0"}}, {v: wrong, s: {...cellStyle, font: {color: {rgb: "FF0000"}}, numFmt: "0"}}, {v: score, s: {...cellStyle, font: {bold: true}, numFmt: "0"}}, {v: total, s: cellStyle, numFmt: "0"}, {v: st.level || "-", s: cellStyle}, {v: missedText, s: {...cellStyle, alignment: {horizontal: "right", wrapText: true}}}]; });
-                    colWidths = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 8}, {wch: 12}, {wch: 12}, {wch: 8}, {wch: 8}, {wch: 8}, {wch: 10}, {wch: 12}, {wch: 40}];
+                    tableHead = [{v: "م", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "اسم الطالب", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "رقم الهوية", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الفصل", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "الدرجة", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}, {v: "المستوى", s: {font: {bold: true, color: {rgb: "FFFFFF"}}, fill: {fgColor: {rgb: "006266"}}, alignment: {horizontal: "center"}}}];
+                    dataRows = printData.content.map((st, i) => { 
+                        let cellStyle = {alignment: {horizontal: "center"}, border: {top: {style: "thin"}, bottom: {style: "thin"}, left: {style: "thin"}, right: {style: "thin"}}}; 
+                        return [{v: i+1, s: cellStyle}, {v: st.name || "بدون اسم", s: cellStyle}, {v: st.studentId || "-", s: cellStyle}, {v: st.section || "-", s: cellStyle}, {v: st.score, s: {...cellStyle, font: {bold: true}}}, {v: st.level || "-", s: cellStyle}]; 
+                    });
+                    colWidths = [{wch: 5}, {wch: 25}, {wch: 15}, {wch: 8}, {wch: 8}, {wch: 12}];
                 }
-                let footerRows = [[], [], [{v: "معد التقارير: لجنة التميز", s: {font: {bold: true}, alignment: {horizontal: "center"}}}, null, null, null, null, null, null, null, {v: "مدير المدرسة: أحمد سالم الشهري", s: {font: {bold: true}, alignment: {horizontal: "center"}}} ]];
+                let footerRows = [[], [], [{v: "معد التقارير: لجنة التميز", s: {font: {bold: true}, alignment: {horizontal: "center"}}}, null, null, {v: "مدير المدرسة: أحمد سالم الشهري", s: {font: {bold: true}, alignment: {horizontal: "center"}}} ]];
                 let finalData = [...headers, tableHead, ...dataRows, ...footerRows];
                 let ws = XLSX.utils.aoa_to_sheet(finalData);
                 ws['!cols'] = colWidths;
-                ws['!merges'] = [{s: {r:0, c:0}, e: {r:0, c:4}}, {s: {r:1, c:0}, e: {r:1, c:4}}, {s: {r:2, c:0}, e: {r:2, c:4}}, {s: {r:3, c:0}, e: {r:3, c:4}}, {s: {r:5, c:0}, e: {r:5, c:4}}, {s: {r: finalData.length-1, c: 0}, e: {r: finalData.length-1, c: 2}}];
                 XLSX.utils.book_append_sheet(wb, ws, "التقرير");
                 XLSX.writeFile(wb, `تقرير_${printData.subtitle.replace(/ /g,'_')}.xlsx`);
                 document.getElementById('loading-overlay').style.display = 'none'; 
             } catch(e) { document.getElementById('loading-overlay').style.display = 'none'; alert("حدث خطأ أثناء التصدير: " + e.message); console.error(e); }
         }
         
-function goToSubjects() { 
-            state.name = document.getElementById('sName').value; 
-            state.id = document.getElementById('sID').value; 
-            state.grade = document.getElementById('sGrade').value; 
-            state.section = document.getElementById('sSection').value; 
-            
-            if(!state.name || !state.grade || !state.id) { alert("الرجاء إكمال جميع البيانات المطلوبة"); return; }
-            if(state.id.length < 10) { alert("⚠️ خطأ: رقم الهوية يجب أن يتكون من 10 أرقام أو أكثر."); return; }
-            
-            // إخفاء العلوم لثالث ابتدائي
-            let sciCard = document.getElementById('card-sci');
-            if (state.grade === '3') {
-                sciCard.style.display = 'none';
-            } else {
-                sciCard.style.display = '';
-            }
-
-            activeWeek = activeWeeksMap[state.grade] || 1; 
-            if(document.getElementById('subject-week-badge')) document.getElementById('subject-week-badge').innerText = "📅 أسبوع " + activeWeek;
-            nav('section-subjects');
-            checkSubjectStatus();
-        }        function checkSubjectStatus() {
+        function checkSubjectStatus() {
             ['math', 'sci', 'read'].forEach(sub => {
                 let card = document.getElementById('card-' + sub);
                 card.style.borderColor = "transparent"; card.style.background = "#fff";
@@ -1363,19 +2250,16 @@ function goToSubjects() {
             });
         }
 
-        // دالة اختيار المادة (المحدثة مع القفل الزمني)
         function selectSubject(sub, el) {
             state.subject = sub;
             var modelsArea = document.getElementById('models-area');
-            var studentGrade = state.grade; // صف الطالب الحالي
+            var studentGrade = state.grade;
             
-            // إعادة تعيين العرض
             modelsArea.innerHTML = ''; 
             modelsArea.style.display = 'block';
             document.querySelectorAll('.subject-card').forEach(c => c.style.border = '2px solid transparent');
             el.style.border = '3px solid var(--primary)';
 
-            // منطق التحقق من الوقت
             let startTimeStr = startTimesMap[studentGrade];
             let isLocked = false;
             let openMsg = "";
@@ -1389,7 +2273,6 @@ function goToSubjects() {
                 }
             }
 
-            // إذا كان الاختبار مغلقاً بسبب الوقت
             if (isLocked) {
                 modelsArea.innerHTML = `
                     <div style="background:#fdedec; border:2px solid #c0392b; border-radius:10px; padding:20px; margin-top:20px;">
@@ -1402,7 +2285,10 @@ function goToSubjects() {
                     </div>
                 `;
             } else {
-                // استرجاع حالة الأزرار من العناصر المخفية
+                let m1State = document.getElementById('btn-m1-state');
+                let m1Text = m1State ? m1State.innerHTML : '<i class="fas fa-lock"></i> تشخيصي';
+                let m1Disabled = m1State ? (m1State.getAttribute('data-disabled') === 'true') : false;
+
                 let m2State = document.getElementById('btn-m2-state');
                 let m2Class = m2State ? m2State.className : 'btn btn-locked';
                 let m2Text = m2State ? m2State.innerHTML : '<i class="fas fa-lock"></i> بنائي';
@@ -1417,8 +2303,8 @@ function goToSubjects() {
                     <h3 style="color:#555; margin-bottom:15px;">نوع الاختبار:</h3>
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
                         <button id="btn-m1" class="btn btn-primary" onclick="startExam(1)">تشخيصي</button>
-                        <button id="btn-m2" class="${m2Class}" ${m2Disabled ? 'disabled' : ''} onclick="startExam(2)">${m2Text}</button>
-                        <button id="btn-m3" class="${m3Class}" ${m3Disabled ? 'disabled' : ''} onclick="startExam(3)">${m3Text}</button>
+                        <button id="btn-m2" class="btn btn-locked" ${m2Disabled ? 'disabled' : ''} onclick="startExam(2)">${m2Text}</button>
+                        <button id="btn-m3" class="btn btn-locked" ${m3Disabled ? 'disabled' : ''} onclick="startExam(3)">${m3Text}</button>
                     </div>
                 `;
             }
@@ -1477,13 +2363,14 @@ function goToSubjects() {
             activeQuestions.forEach((q,i)=>{ 
                 let cleanQ = sanitizeHTML(q.t); let qText = formatMath(smartFixMath(cleanQ));
                 let qOpts = q.o.map(opt => formatMath(smartFixMath(sanitizeHTML(opt))));
-                h += `<div class="question-box" id="q-box-${i}"><div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div id="opts-${i}">${qOpts.map((o,x)=>`<label class="option-label" id="lbl-${i}-${x}"><input type="radio" name="q${i}" value="${x}"> ${o}</label>`).join('')}</div><div id="fb-${i}" style="display:none;margin-top:10px;padding:10px;border-radius:5px;font-weight:bold;"></div></div>`; 
+                let passageHtml = q.p ? `<div class="reading-passage">${formatMath(smartFixMath(q.p))}</div>` : "";
+                h += `<div class="question-box" id="q-box-${i}">${passageHtml}<div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div id="opts-${i}">${qOpts.map((o,x)=>`<label class="option-label" id="lbl-${i}-${x}"><input type="radio" name="q${i}" value="${x}"> ${o}</label>`).join('')}</div><div id="fb-${i}" style="display:none;margin-top:10px;padding:10px;border-radius:5px;font-weight:bold;"></div></div>`; 
             }); 
             document.getElementById('quizContainer').innerHTML = h; 
             document.getElementById('result-area').style.display='none'; 
             document.getElementById('btn-submit').style.display='block'; 
             document.getElementById('quizHeader').innerText = `${subMap[state.subject]} - ${modelMap[state.model]} (أسبوع ${activeWeek})`; 
-            setTimeout(() => { if(window.MathJax) MathJax.typesetPromise(); }, 500); 
+            safeMathJaxRender(); 
         }
         
         function submitAnswers() { 
@@ -1520,7 +2407,7 @@ function goToSubjects() {
             document.getElementById('result-area').scrollIntoView({behavior:"smooth"});
             document.getElementById('btn-submit').style.display='none'; 
             document.getElementById('btn-back').style.display='block';
-            setTimeout(() => { if(window.MathJax) MathJax.typesetPromise(); }, 500); 
+            safeMathJaxRender(); 
             if(isOnline && db) { 
                 db.ref('exam_results').push({ 
                     name:state.name, studentId:state.id, grade:state.grade, section:state.section, 
@@ -1597,214 +2484,189 @@ function goToSubjects() {
                             let labelStyle = (x === q.a) ? "background-color:#27ae60; color:#fff;" : (x === userAnsIndex && !isCorrect ? "background-color:#e74c3c; color:#fff;" : ""); 
                             return `<label class="option-label" style="pointer-events:none; ${labelStyle}"><input type="radio" disabled ${x===userAnsIndex?'checked':''}> ${optTxt}</label>`;
                         }).join('');
-                        h += `<div class="question-box" style="${boxStyle}"><div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div>${qOpts}</div>${feedback}</div>`;
+                        let passageHtml = q.p ? `<div class="reading-passage">${formatMath(smartFixMath(q.p))}</div>` : "";
+                        h += `<div class="question-box" style="${boxStyle}">${passageHtml}<div style="font-weight:bold;margin-bottom:10px;">${toAr(i+1)}. ${qText}</div><div>${qOpts}</div>${feedback}</div>`;
                     });
                     document.getElementById('review-subtitle').innerText = `${subMap[result.subject]} - الأسبوع ${result.week}`;
                     document.getElementById('review-container').innerHTML = h;
                     nav('section-review');
-                    setTimeout(() => { if(window.MathJax) MathJax.typesetPromise(); }, 500);
+                    safeMathJaxRender();
                 });
             });
         }
         
-async function executeArchiving() {
+        async function executeArchiving() {
             if (tempQuestionList.length === 0) return alert("لا توجد أسئلة في القائمة للأرشفة!");
-
             const dest = document.getElementById('archive-dest').value;
             const modelType = document.getElementById('archive-model-type').value; 
             const nameInput = document.getElementById('archive-name').value;
             const statusEl = document.getElementById('archive-status');
             const btn = document.getElementById('btn-archive');
             const isTeacher = (modelType === 'teacher');
-
             let subjectName = subMap[document.getElementById('q-subject').value] || "مادة";
             let weekNum = document.getElementById('q-week').value || "0";
             let gradeVal = document.getElementById('q-grade').value;
             let fileName = nameInput ? nameInput : `اختبار_${subjectName}_أسبوع_${weekNum}_${isTeacher ? 'معلم' : 'طالب'}`;
             if (!fileName.endsWith('.pdf')) fileName += '.pdf';
-
+            
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري المعالجة...';
-            statusEl.innerHTML = '<span style="color:blue">جاري تجهيز التصميم المطابق للمنصة...</span>';
-
-            // 1. إنشاء الحاوية الخارجية (Overlay)
-            // نستخدم هذا الغطاء لضمان أن عملية التصوير تتم على خلفية بيضاء ونظيفة
+            statusEl.innerHTML = '<span style="color:blue">جاري تجهيز النموذج الرسمي...</span>';
+            
             const element = document.createElement('div');
             element.style.position = 'fixed'; 
+            element.style.left = '0'; 
             element.style.top = '0';
-            element.style.left = '0';
-            element.style.width = '100%';
-            element.style.height = '100%'; 
-            element.style.zIndex = '999999'; 
-            element.style.background = '#ffffff'; 
-            element.style.overflowY = 'scroll'; // السماح بالتمرير للمحتوى الطويل
-            element.style.padding = '0'; 
+            element.style.width = '794px';
+            element.style.opacity = '0';
+            element.style.background = '#ffffff';
+            element.style.zIndex = '-500';
             
-            // 2. تصميم الورقة (Paper)
             const paper = document.createElement('div');
-            paper.style.width = '794px'; // عرض A4 القياسي
+            paper.style.width = '794px'; 
             paper.style.minHeight = '1123px'; 
-            paper.style.margin = '0 auto'; 
+            paper.style.margin = '0'; 
             paper.style.background = '#ffffff';
-            paper.style.position = 'relative';
-            paper.style.direction = 'rtl';
+            paper.style.position = 'relative'; 
+            paper.style.direction = 'rtl'; 
             paper.style.fontFamily = "'Tajawal', 'Amiri', sans-serif"; 
-            paper.style.color = '#000';
-            paper.style.padding = '40px 50px'; // هوامش الورقة
+            paper.style.color = '#000'; 
+            paper.style.padding = '40px 50px'; 
             paper.style.boxSizing = 'border-box'; 
-            
-            // === إصلاح العلامة المائية ===
-            // جعلناها أغمق (0.08) ومتكررة لتشبه خلفية المنصة
-            paper.style.backgroundImage = "url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' version='1.1' height='200px' width='200px'><text transform='translate(20, 100) rotate(-30)' fill='rgba(0,0,0,0.08)' font-size='20' font-family='Tajawal' font-weight='bold'>مدرسة الراشدون</text></svg>\")";
-            paper.style.backgroundRepeat = "repeat"; // تكرار العلامة المائية
 
             let logoRight = cachedLogos.ministry || ""; 
             let logoLeft = cachedLogos.vision || "";
-
-            // === الترويسة (Header) ===
-            let headerHtml = `
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 2px double #000; padding-bottom: 15px;">
-                <div style="width: 100px; height: 80px; display:flex; align-items:center; justify-content:center;">
-                    ${logoRight ? `<img src="${logoRight}" style="max-width:100%; max-height:100%;">` : ''}
-                </div>
-                <div style="text-align: center; flex: 1;">
-                    <div style="font-size:12px; margin-bottom:3px;">المملكة العربية السعودية</div>
-                    <div style="font-size:12px; margin-bottom:3px;">وزارة التعليم</div>
-                    <div style="font-size:12px; margin-bottom:3px;">الإدارة العامة للتعليم بمنطقة عسير</div>
-                    <div style="font-size:16px; font-weight:800; margin: 8px 0; font-family:'Amiri', serif;">ابتدائية ومتوسطة الراشدون بالمربع</div>
-                    <div style="border: 1px solid #000; padding: 5px 20px; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 14px; margin-top: 5px; background:#f9f9f9;">
-                        اختبار نافس (${isTeacher ? 'نموذج الإجابة' : 'نسخة الطالب'})
-                    </div>
-                </div>
-                <div style="width: 100px; height: 80px; display:flex; align-items:center; justify-content:center;">
-                    ${logoLeft ? `<img src="${logoLeft}" style="max-width:100%; max-height:100%;">` : ''}
-                </div>
-            </div>
-            
-            <div style="border: 2px solid #000; padding: 8px 10px; margin-bottom: 30px; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; background-color: #fff;">
-                <div style="flex:1;">المادة: ${subjectName}</div>
-                <div style="flex:1; text-align:center;">الصف: ${gradeMap[gradeVal] || ''}</div>
-                <div style="flex:1; text-align:left;">الاسم: ...........................................</div>
-            </div>`;
-
-            // === محتوى الأسئلة ===
+            let headerHtml = `<div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 2px double #000; padding-bottom: 15px;"><div style="width: 100px; height: 80px; display:flex; align-items:center; justify-content:center;">${logoRight ? `<img src="${logoRight}" style="max-width:100%; max-height:100%;">` : ''}</div><div style="text-align: center; flex: 1;"><div style="font-size:12px; margin-bottom:3px;">المملكة العربية السعودية</div><div style="font-size:12px; margin-bottom:3px;">وزارة التعليم</div><div style="font-size:12px; margin-bottom:3px;">الإدارة العامة للتعليم بمنطقة عسير</div><div style="font-size:16px; font-weight:800; margin: 8px 0; font-family:'Amiri', serif;">ابتدائية ومتوسطة الراشدون بالمربع</div><div style="border: 1px solid #000; padding: 5px 20px; border-radius: 8px; display: inline-block; font-weight: bold; font-size: 14px; margin-top: 5px; background:#f9f9f9;">اختبار نافس (${isTeacher ? 'نموذج الإجابة' : 'نسخة الطالب'})</div></div><div style="width: 100px; height: 80px; display:flex; align-items:center; justify-content:center;">${logoLeft ? `<img src="${logoLeft}" style="max-width:100%; max-height:100%;">` : ''}</div></div><div style="border: 2px solid #000; padding: 8px 10px; margin-bottom: 30px; display: flex; justify-content: space-between; font-weight: bold; font-size: 14px; background-color: #fff;"><div style="flex:1;">المادة: ${subjectName}</div><div style="flex:1; text-align:center;"> الصف: ${gradeMap[gradeVal] || ''} </div><div style="flex:1; text-align:left;">الاسم: ...........................................</div></div>`;
             let contentHtml = tempQuestionList.map((q, i) => {
                 let qText = formatMath(smartFixMath(q.t));
                 let num = toAr(i + 1);
-                
-                // === إصلاح الخيارات (Grid Layout) ===
-                // استخدام CSS Grid لضمان ظهور الخيارات بجانب بعضها (عمودين) مهما كان حجم الشاشة
                 let optionsHtml = `<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; margin-top: 10px;">`;
-                
                 q.o.forEach((opt, idx) => {
                     let optText = formatMath(smartFixMath(opt));
                     let label = ['(أ)', '(ب)', '(ج)', '(د)'][idx];
-                    
-                    // تنسيق الصندوق (Box) كما في المنصة
                     let boxStyle = "border: 1px solid #ccc; border-radius: 6px; padding: 8px 12px; background: #fff; display: flex; justify-content: space-between; align-items: center; font-size: 14px; min-height: 38px;";
                     let checkMark = "";
-
-                    // تلوين الإجابة للمعلم
-                    if (isTeacher && idx === q.a) { 
-                        boxStyle = "border: 2px solid #27ae60; border-radius: 6px; padding: 8px 12px; background: #e8f8f5; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight:bold; min-height: 38px;";
-                        checkMark = `<span style="color:#27ae60; font-size:16px; margin-right:5px;">✔</span>`;
-                    }
-
-                    // ترتيب العناصر داخل الصندوق: النص يمين، الرمز (أ) يسار
-                    optionsHtml += `
-                        <div style="${boxStyle}">
-                            <div style="flex:1; text-align:right;">${optText} ${checkMark}</div>
-                            <div style="font-weight:bold; color:#555; font-family:'Tajawal';">${label}</div>
-                        </div>
-                    `;
+                    if (isTeacher && idx === q.a) { boxStyle = "border: 2px solid #27ae60; border-radius: 6px; padding: 8px 12px; background: #e8f8f5; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight:bold; min-height: 38px;"; checkMark = `<span style="color:#27ae60; font-size:16px; margin-right:5px;">✔</span>`; }
+                    optionsHtml += `<div style="${boxStyle}"><div style="flex:1; text-align:right;">${optText} ${checkMark}</div><div style="font-weight:bold; color:#555; font-family:'Tajawal';">${label}</div></div>`;
                 });
-                optionsHtml += `</div>`; // إغلاق div الشبكة
-
-                // المؤشر
+                optionsHtml += `</div>`; 
                 let indicatorHtml = q.s ? `<div style="margin-top: 8px; font-size: 11px; color: #666; border-top:1px dotted #ccc; padding-top:4px;">📂 المؤشر: ${q.s}</div>` : '';
-
-                // تجميع السؤال
-                return `
-                <div style="margin-bottom: 25px; border-bottom: 1px dashed #999; padding-bottom: 20px; page-break-inside: avoid;">
-                    <div style="display: flex; align-items: flex-start; margin-bottom: 10px;">
-                        <div style="border: 2px solid #000; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-left: 12px; font-size: 15px; flex-shrink:0; background:#f5f5f5;">${num}</div>
-                        <div style="font-size: 16px; font-weight: bold; line-height: 1.6; padding-top: 3px; width:100%; text-align:justify;">${qText}</div>
-                    </div>
-                    <div style="padding-right: 45px;">
-                        ${optionsHtml}
-                        ${isTeacher ? indicatorHtml : ''}
-                    </div>
-                </div>`;
+                let passageHtml = q.p ? `<div style="background:#f9f9f9; padding:10px; border:1px solid #ddd; margin-bottom:10px; border-radius:5px; text-align:justify; line-height:1.8; font-family:'Times New Roman'; font-size:14pt;">${formatMath(smartFixMath(q.p))}</div>` : "";
+                return `<div style="margin-bottom: 25px; border-bottom: 1px dashed #999; padding-bottom: 20px; page-break-inside: avoid;">${passageHtml}<div style="display: flex; align-items: flex-start; margin-bottom: 10px;"><div style="border: 2px solid #000; border-radius: 50%; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; font-weight: bold; margin-left: 12px; font-size: 15px; flex-shrink:0; background:#f5f5f5;">${num}</div><div style="font-size: 16px; font-weight: bold; line-height: 1.6; padding-top: 3px; width:100%; text-align:justify;">${qText}</div></div><div style="padding-right: 45px;">${optionsHtml}${isTeacher ? indicatorHtml : ''}</div></div>`;
             }).join('');
+            
+            let footerHtml = `<div style="margin-top: 50px; border-top: 3px double #000; padding-top: 15px; display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;"><div>✍️ إعداد: لجنة التميز</div><div>مدير المدرسة: أ. أحمد سالم الشهري</div></div>`;
+            paper.innerHTML = headerHtml + contentHtml + footerHtml; 
+            element.appendChild(paper); 
+            document.body.appendChild(element); 
 
-            let footerHtml = `
-            <div style="margin-top: 50px; border-top: 3px double #000; padding-top: 15px; display: flex; justify-content: space-between; font-weight: bold; font-size: 13px;">
-                <div>✍️ إعداد: لجنة التميز</div>
-                <div>مدير المدرسة: أ. أحمد سالم الشهري</div>
-            </div>`;
-
-            paper.innerHTML = headerHtml + contentHtml + footerHtml;
-            element.appendChild(paper);
-            document.body.appendChild(element);
-
-            // 3. التمرير للأعلى ومعالجة الرياضيات (MathJax)
-            window.scrollTo(0,0);
-            if (window.MathJax) { await MathJax.typesetPromise([element]); }
-
-            // 4. مهلة زمنية إجبارية لضمان اكتمال الرسم (مهمة جداً)
-            await new Promise(r => setTimeout(r, 1500));
-
+            if (window.MathJax && typeof window.MathJax.typesetPromise === 'function') { 
+                await MathJax.typesetPromise([element]); 
+            }
+            await new Promise(r => setTimeout(r, 2000));
+            
             try {
-                const opt = {
-                    margin: [0.2, 0.2, 0.2, 0.2], 
-                    filename: fileName,
-                    image: { type: 'jpeg', quality: 0.99 }, // جودة عالية
-                    html2canvas: { 
-                        scale: 2, 
-                        useCORS: true, 
-                        scrollY: 0,
-                    },
-                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+                const opt = { 
+                    margin: [0.3, 0.3, 0.3, 0.3], 
+                    filename: fileName, 
+                    image: { type: 'jpeg', quality: 0.98 }, 
+                    html2canvas: { scale: 2, useCORS: true, letterRendering: true, scrollY: 0 }, 
+                    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait', compress: true } 
                 };
-
-                if (dest === 'local') {
-                    await html2pdf().set(opt).from(paper).save();
-                    statusEl.innerHTML = '<span style="color:green">✅ تم حفظ الملف في جهازك</span>';
+                
+                if (dest === 'local') { 
+                    await html2pdf().set(opt).from(paper).save(); 
+                    statusEl.innerHTML = '<span style="color:green">✅ تم تحميل الملف</span>'; 
                 } else {
                     statusEl.innerHTML = '<span style="color:blue">جاري الرفع لسحابة قوقل...</span>';
                     const pdfBlob = await html2pdf().set(opt).from(paper).outputPdf('blob');
-                    const reader = new FileReader();
-                    reader.readAsDataURL(pdfBlob); 
+                    const reader = new FileReader(); reader.readAsDataURL(pdfBlob); 
                     reader.onloadend = async function() {
                         const base64data = reader.result.split(',')[1];
                         const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyahJle4Bhe41Txha30KMJccu8oXJJCj2UkVgW-cn4toPQKFlIYVhLvtR8OLnqSy5Ix/exec";
                         let subFolderName = `اختبارات_${subMap[document.getElementById('q-subject').value]}`;
-                        const response = await fetch(SCRIPT_URL, { 
-                            method: 'POST', 
-                            body: JSON.stringify({ 
-                                type: "tests", 
-                                subFolderName: subFolderName, 
-                                fileName: fileName, 
-                                fileData: base64data 
-                            }) 
-                        });
+                        const response = await fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify({ type: "tests", subFolderName: subFolderName, fileName: fileName, fileData: base64data }) });
                         const result = await response.json();
-                        if (result.status === 'success') { 
-                            statusEl.innerHTML = `✅ تم الحفظ! <a href="${result.fileUrl}" target="_blank" style="text-decoration:underline; color:blue;">رابط الملف</a>`; 
-                        } else { 
-                            statusEl.innerHTML = `<span style="color:red">❌ خطأ من السكربت: ${result.message}</span>`; 
-                        }
+                        if (result.status === 'success') { statusEl.innerHTML = `✅ تم الحفظ! <a href="${result.fileUrl}" target="_blank" style="text-decoration:underline; color:blue;">رابط الملف</a>`; } else { statusEl.innerHTML = `<span style="color:red">❌ خطأ: ${result.message}</span>`; }
                     }
                 }
-            } catch (err) {
-                console.error(err);
-                statusEl.innerHTML = '<span style="color:red">حدث خطأ أثناء المعالجة!</span>';
-            } finally {
-                if (document.body.contains(element)) document.body.removeChild(element);
-                btn.disabled = false;
-                btn.innerHTML = '🚀 تنفيذ الأرشفة';
+            } catch (err) { 
+                console.error(err); 
+                statusEl.innerHTML = '<span style="color:red">حدث خطأ أثناء إنشاء PDF!</span>'; 
+            } finally { 
+                if (document.body.contains(element)) document.body.removeChild(element); 
+                btn.disabled = false; 
+                btn.innerHTML = '🚀 تنفيذ الأرشفة'; 
             }
-        } renderList();
-    </script>
+        } 
+        
+        // Initial rendering call
+        renderList();
+    
+document.addEventListener('DOMContentLoaded', function(){ applyOfflineExamSettings();
+            loadExamMetaFromDBIfAvailable(); });
+</script>
+
+    <!-- حالات فتح/قفل نماذج الاختبار (مخفية) -->
+    <button id="btn-m1-state" class="btn btn-primary" data-disabled="false" style="display:none;">تشخيصي</button>
+
+    <!-- نافذة تعديل العنوان والتذييل -->
+    <div id="metaEditorModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.6); z-index:9999; padding:20px; overflow:auto;">
+        <div style="max-width:720px; margin:40px auto; background:#fff; border-radius:12px; padding:20px; box-shadow:0 10px 30px rgba(0,0,0,.25);">
+            <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:10px;">
+                <h3 style="margin:0; font-family:'Cairo',sans-serif;">تعديل عنوان الاختبار والتذييل</h3>
+                <button class="btn btn-locked" onclick="closeMetaEditor()" style="min-width:90px;"><i class="fas fa-times"></i> إغلاق</button>
+            </div>
+
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:12px;">
+                <div>
+                    <label style="font-weight:bold;">عنوان الاختبار (اختياري)</label>
+                    <input id="meta-title" class="input" placeholder="مثال: اختبار رياضيات - تماثل وتحويلات" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                    <div style="font-size:12px; color:#555; margin-top:6px;">إذا تركته فارغًا سيظهر العنوان الافتراضي.</div>
+                </div>
+                <div>
+                    <label style="font-weight:bold;">سطر إضافي تحت العنوان (اختياري)</label>
+                    <input id="meta-subline" class="input" placeholder="مثال: الأسبوع السادس | الوحدة الثالثة" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                    <div style="font-size:12px; color:#555; margin-top:6px;">إذا تركته فارغًا سيظهر (المادة - الصف - النموذج - الأسبوع) تلقائيًا.</div>
+                </div>
+
+                <div>
+                    <label style="font-weight:bold;">تذييل يمين (نص)</label>
+                    <input id="meta-footer-right" class="input" placeholder="مثال: معد الأسئلة" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                </div>
+                <div>
+                    <label style="font-weight:bold;">تذييل يمين (اسم)</label>
+                    <input id="meta-footer-right-name" class="input" placeholder="مثال: أ. علي إبراهيم" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                </div>
+
+                <div>
+                    <label style="font-weight:bold;">تذييل يسار (نص)</label>
+                    <input id="meta-footer-left" class="input" placeholder="مثال: مدير المدرسة" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                </div>
+                <div>
+                    <label style="font-weight:bold;">تذييل يسار (اسم)</label>
+                    <input id="meta-footer-left-name" class="input" placeholder="مثال: أحمد سالم الشهري" style="width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                </div>
+            </div>
+
+            
+<div style="margin-top:16px; padding:12px; border:1px dashed #bbb; border-radius:10px; background:#fafafa;">
+    <div style="font-weight:900; color:#2c3e50; margin-bottom:8px;"><i class="fas fa-clipboard-check"></i> نموذج تظليل الإجابة (صورة)</div>
+    <div class="omr-toolbar">
+        <button type="button" class="btn btn-primary" onclick="openOMRPicker(event)" style="background:#1abc9c;"><i class="fas fa-image"></i> إدراج نموذج التظليل</button>
+        <button type="button" class="btn btn-danger" onclick="removeOMR(event)"><i class="fas fa-trash"></i> حذف النموذج</button>
+    </div>
+    <div style="font-size:12px; color:#555; margin-top:8px;">سيظهر النموذج في نهاية أسئلة الاختبار (فوق التذييل) ويُطبع تلقائيًا.</div>
+</div>
+
+            <div style="display:flex; gap:10px; justify-content:flex-end; margin-top:16px;">
+                <button class="btn btn-secondary" onclick="resetExamMeta()" style="background:#c0392b;"><i class="fas fa-rotate-left"></i> إعادة الضبط</button>
+                <button class="btn btn-primary" onclick="saveExamMeta()" style="background:#2c3e50;"><i class="fas fa-save"></i> حفظ</button>
+            </div>
+        </div>
+    </div>
+
+
+<input id="omr-file" type="file" accept="image/*" style="display:none" />
 </body>
 </html>
