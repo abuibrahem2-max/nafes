@@ -210,7 +210,24 @@ document.addEventListener('DOMContentLoaded', function(){ applyOfflineExamSettin
         
         .timer-float { position: fixed; top: 20px; left: 20px; background: #c0392b; color: white; padding: 10px 20px; border-radius: 30px; font-weight: 800; font-size: 1.1rem; z-index: 1500; box-shadow: 0 4px 15px rgba(0,0,0,0.2); display: none; align-items: center; gap: 10px; animation: pulse 2s infinite; }
         
-        /* Stats Cards */
+        
+        /* ===== تمييز الأزرار المفتوحة (بنائي/ختامي) ===== */
+        .btn-open-pulse{
+            box-shadow: 0 0 0 rgba(0,0,0,0);
+            animation: openPulse 1.8s infinite;
+        }
+        @keyframes openPulse{
+            0%   { box-shadow: 0 0 0 0 rgba(39,174,96,0.0); transform: translateY(0); }
+            50%  { box-shadow: 0 0 18px 2px rgba(39,174,96,0.35); transform: translateY(-1px); }
+            100% { box-shadow: 0 0 0 0 rgba(39,174,96,0.0); transform: translateY(0); }
+        }
+        /* ألوان خاصة للنماذج */
+        .btn-model-m1{ background: linear-gradient(135deg, #0984e3, #74b9ff); color:#fff; }
+        .btn-model-m2{ background: linear-gradient(135deg, #d35400, #e67e22); color:#fff; }
+        .btn-model-m3{ background: linear-gradient(135deg, #c0392b, #e74c3c); color:#fff; }
+        .btn-model-m1 i, .btn-model-m2 i, .btn-model-m3 i{ color:#fff; }
+    
+/* Stats Cards */
         .stats-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-bottom: 20px; }
         .stat-card { background: white; padding: 15px; border-radius: 10px; border: 1px solid #e1e1e1; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         .stat-val { font-size: 1.5rem; font-weight: 800; color: var(--primary); }
@@ -1333,7 +1350,7 @@ s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-sha
                     let m1State = document.getElementById('btn-m1-state');
                     if (m1State) {
                         if (v.m1 !== false) { // default مفتوح
-                            m1State.className = 'btn btn-primary';
+                            m1State.className = 'btn btn-primary btn-model-m1 btn-open-pulse';
                             m1State.innerHTML = 'تشخيصي';
                             m1State.setAttribute('data-disabled', 'false');
                             if (document.getElementById('toggle-m1')) document.getElementById('toggle-m1').checked = true;
@@ -1350,7 +1367,7 @@ s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-sha
                     let m2State = document.getElementById('btn-m2-state');
                     if (m2State) {
                         if (v.m2) {
-                            m2State.className = 'btn btn-primary';
+                            m2State.className = 'btn btn-warning btn-model-m2 btn-open-pulse';
                             m2State.innerHTML = 'بنائي';
                             m2State.setAttribute('data-disabled', 'false');
                             if (document.getElementById('toggle-m2')) document.getElementById('toggle-m2').checked = true;
@@ -1365,7 +1382,7 @@ s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-sha
                     let m3State = document.getElementById('btn-m3-state');
                     if (m3State) {
                         if (v.m3) {
-                            m3State.className = 'btn btn-primary';
+                            m3State.className = 'btn btn-danger btn-model-m3 btn-open-pulse';
                             m3State.innerHTML = 'ختامي';
                             m3State.setAttribute('data-disabled', 'false');
                             if (document.getElementById('toggle-m3')) document.getElementById('toggle-m3').checked = true;
@@ -1377,7 +1394,17 @@ s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-sha
                         }
                     }
 
-                    if (v.activeWeeks) {
+                    
+                    // حفظ حالة فتح النماذج محلياً (للدعم في وضع عدم الاتصال)
+                    try {
+                        localStorage.setItem('examsSettings', JSON.stringify({
+                            m1: (v.m1 !== false),
+                            m2: !!v.m2,
+                            m3: !!v.m3
+                        }));
+                    } catch(e) { console.log(e); }
+
+if (v.activeWeeks) {
                         activeWeeksMap = v.activeWeeks;
                         if (document.getElementById('week-select-3')) document.getElementById('week-select-3').value = activeWeeksMap['3'];
                         if (document.getElementById('week-select-6')) document.getElementById('week-select-6').value = activeWeeksMap['6'];
@@ -1404,7 +1431,13 @@ s = s.replace(/\[شكل:دائرة\|ن=(.*?)\]/g, (m, v) => `<div class='geo-sha
                 const setBtn = (id, isOpen, label) => {
                     const el = document.getElementById(id);
                     if(!el) return;
-                    if(isOpen) { el.className='btn btn-primary'; el.innerHTML=label; el.setAttribute('data-disabled','false'); }
+                    if(isOpen) { 
+                        if(id==='btn-m1-state') el.className='btn btn-primary btn-model-m1 btn-open-pulse';
+                        else if(id==='btn-m2-state') el.className='btn btn-warning btn-model-m2 btn-open-pulse';
+                        else if(id==='btn-m3-state') el.className='btn btn-danger btn-model-m3 btn-open-pulse';
+                        else el.className='btn btn-primary btn-open-pulse';
+                        el.innerHTML=label; el.setAttribute('data-disabled','false'); 
+                    }
                     else { el.className='btn btn-locked'; el.innerHTML='<i class="fas fa-lock"></i> '+label; el.setAttribute('data-disabled','true'); }
                 };
                 if(typeof v.m1 === 'boolean') setBtn('btn-m1-state', v.m1, 'تشخيصي');
@@ -2031,7 +2064,28 @@ function printFormalExam(withAnswers) {
                 options: { responsive: true, maintainAspectRatio: false, animation: false, plugins: { title: {display: true, text: 'المنحنى البياني لتوزيع درجات الطلاب'} }, scales: { y: { beginAtZero: true, title: {display:true, text: 'عدد الطلاب'} }, x: { title: {display:true, text: 'الدرجة'} } } }
             });
         }
-        function toggleExam(k) { if(isOnline) db.ref('settings/'+k).set(document.getElementById('toggle-'+k).checked); }
+        function toggleExam(k) { 
+            try{
+                const chk = document.getElementById('toggle-'+k);
+                const val = !!(chk && chk.checked);
+                // حفظ محلياً
+                const raw = localStorage.getItem('examsSettings');
+                let v = {};
+                try{ v = raw ? JSON.parse(raw) : {}; }catch(e){ v = {}; }
+                v[k] = val;
+                localStorage.setItem('examsSettings', JSON.stringify(v));
+                applyOfflineExamSettings();
+                // تحديث واجهة الطالب إن كانت ظاهرة
+                try{
+                    if(document.getElementById('section-subjects')?.classList.contains('active') && state && state.subject){
+                        const cardEl = document.getElementById('card-'+state.subject);
+                        if(cardEl) selectSubject(state.subject, cardEl);
+                    }
+                }catch(e){}
+                // حفظ على قاعدة البيانات عند الاتصال
+                if(isOnline && db) db.ref('settings/'+k).set(val);
+            }catch(e){ console.log(e); }
+        }
         function saveWeekForGrade(grade, weekVal) { if(isOnline) { activeWeeksMap[grade] = parseInt(weekVal); db.ref('settings/activeWeeks/' + grade).set(parseInt(weekVal)); } }
         function saveTimerSettings() { if(isOnline) { db.ref('settings/timerEnabled').set(document.getElementById('toggle-timer').checked); db.ref('settings/timerDuration').set(document.getElementById('timer-duration-input').value); } }
         function uploadLogo(t, i) { let r = new FileReader(); r.onload = e => { document.getElementById('preview-'+t).src = e.target.result; if(isOnline) db.ref('settings/logos/'+t).set(e.target.result); }; if(i.files[0]) r.readAsDataURL(i.files[0]); }
@@ -2286,14 +2340,15 @@ function printFormalExam(withAnswers) {
                 `;
             } else {
                 let m1State = document.getElementById('btn-m1-state');
-                let m1Text = m1State ? m1State.innerHTML : '<i class="fas fa-lock"></i> تشخيصي';
+                let m1Class = m1State ? m1State.className : 'btn btn-primary btn-model-m1 btn-open-pulse';
+                let m1Text = m1State ? m1State.innerHTML : 'تشخيصي';
                 let m1Disabled = m1State ? (m1State.getAttribute('data-disabled') === 'true') : false;
 
                 let m2State = document.getElementById('btn-m2-state');
                 let m2Class = m2State ? m2State.className : 'btn btn-locked';
                 let m2Text = m2State ? m2State.innerHTML : '<i class="fas fa-lock"></i> بنائي';
                 let m2Disabled = m2State ? (m2State.getAttribute('data-disabled') === 'true') : true;
-                
+
                 let m3State = document.getElementById('btn-m3-state');
                 let m3Class = m3State ? m3State.className : 'btn btn-locked';
                 let m3Text = m3State ? m3State.innerHTML : '<i class="fas fa-lock"></i> ختامي';
@@ -2302,12 +2357,12 @@ function printFormalExam(withAnswers) {
                 modelsArea.innerHTML = `
                     <h3 style="color:#555; margin-bottom:15px;">نوع الاختبار:</h3>
                     <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px;">
-                        <button id="btn-m1" class="btn btn-primary" onclick="startExam(1)">تشخيصي</button>
-                        <button id="btn-m2" class="btn btn-locked" ${m2Disabled ? 'disabled' : ''} onclick="startExam(2)">${m2Text}</button>
-                        <button id="btn-m3" class="btn btn-locked" ${m3Disabled ? 'disabled' : ''} onclick="startExam(3)">${m3Text}</button>
+                        <button id="btn-m1" class="${m1Class}" ${m1Disabled ? 'disabled' : ''} onclick="startExam(1)">${m1Text}</button>
+                        <button id="btn-m2" class="${m2Class}" ${m2Disabled ? 'disabled' : ''} onclick="startExam(2)">${m2Text}</button>
+                        <button id="btn-m3" class="${m3Class}" ${m3Disabled ? 'disabled' : ''} onclick="startExam(3)">${m3Text}</button>
                     </div>
                 `;
-            }
+                }
 
             setTimeout(function() {
                 modelsArea.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -2316,6 +2371,18 @@ function printFormalExam(withAnswers) {
         
         function startExam(m) { 
             state.model = m; 
+
+            // منع الدخول إذا كان النموذج مغلقاً (حتى لو ظهر زر بالخطأ)
+            try{
+                const map = {1:'btn-m1-state',2:'btn-m2-state',3:'btn-m3-state'};
+                const stEl = document.getElementById(map[m]);
+                const isDisabled = stEl ? (stEl.getAttribute('data-disabled') === 'true') : false;
+                if(isDisabled){
+                    alert('هذا الاختبار مغلق حالياً 🔒');
+                    return;
+                }
+            }catch(e){}
+
             if(!state.id) { alert("سجل دخولك"); nav('section-home'); return; }
             document.getElementById('loading-overlay').style.display='flex'; 
             if(isOnline && db) {
